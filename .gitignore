@@ -1,69 +1,53 @@
-# Prerequisites
-*.d
-
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Linker files
-*.ilk
-
-# Debugger Files
-*.pdb
-
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-*.so.*
-
-
-# Fortran module files
-*.mod
-*.smod
-
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
-
-# Executables
-*.exe
-*.out
-*.app
-
-# Build directories
+# Build
 build/
 Build/
 build-*/
+*.o
+*.obj
+*.a
+*.so
+*.dylib
+*.dll
+*.exe
+*.out
+*.app
+*.d
+*.slo
+*.lo
+*.ilk
+*.pdb
+*.lai
+*.la
+*.lib
+*.mod
+*.smod
+*.gch
+*.pch
 
-# CMake generated files
+# CMake
 CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake
-Makefile
 install_manifest.txt
 compile_commands.json
+CTestTestfile.cmake
+Testing/
 
-# Temporary files
+# IDE / temp
+.cache/
 *.tmp
 *.log
 *.bak
 *.swp
+.vscode/
+.idea/
 
-# vcpkg
-vcpkg_installed/
+# Local run outputs
+*.tsv
+!tests/data/*.bedmethyl
+merge_bedmethyl_*.out
+merge_bedmethyl_*.err
 
-# debug information files
-*.dwo
-
-# test output & cache
-Testing/
-.cache/
+# Legacy bin/ artifacts
+bin/merge_bedmethyl
+bin/output.tsv
