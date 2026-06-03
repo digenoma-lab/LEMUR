@@ -11,3 +11,11 @@ add_test(
 set_tests_properties(merge_two_samples PROPERTIES
     PASS_REGULAR_EXPRESSION "Wrote 1 rows"
 )
+
+add_test(
+    NAME merge_output_format
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+        ${CMAKE_CURRENT_BINARY_DIR}/test_out.tsv
+        ${CMAKE_CURRENT_SOURCE_DIR}/expected/merge_two_samples.tsv
+)
+set_tests_properties(merge_output_format PROPERTIES DEPENDS merge_two_samples)

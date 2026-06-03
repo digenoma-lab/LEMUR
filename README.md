@@ -112,7 +112,14 @@ make test
 cd build && ctest --output-on-failure
 ```
 
-The `merge_two_samples` test writes `build/tests/test_out.tsv` with the header and row shown in [Output format](#output-format).
+CTest runs:
+
+1. **merge_two_samples** — merges fixture bedMethyl pairs and checks row count.
+2. **merge_output_format** — compares output to `tests/expected/merge_two_samples.tsv` (see [Output format](#output-format)).
+
+### Continuous integration
+
+On push and pull requests to `main` and `dev`, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) builds with CMake and runs `ctest` on Ubuntu.
 
 ## Project layout
 
@@ -123,6 +130,8 @@ MergeBedMethyl/
 ├── include/merge_bedmethyl/
 ├── src/
 ├── tests/data/           # small bedMethyl fixtures
+├── tests/expected/     # golden TSV for output tests
+├── .github/workflows/    # GitHub Actions CI
 └── scripts/run_slurm.sh
 ```
 
