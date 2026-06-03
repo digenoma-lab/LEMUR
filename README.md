@@ -4,15 +4,17 @@ Stream-merge [modkit](https://github.com/nanoporetech/modkit) **bedMethyl** file
 
 ## Output format
 
-Each row is one genomic position (`chr`, `pos`). Each sample is one column with haplotype methylation as `hp1|hp2`:
+Each row is one genomic position (`chr`, `pos`). Each sample contributes six columns:
 
-| chr | pos | CHI01 | CHI02 |
-|-----|-----|-------|-------|
-| chr1 | 1015144 | 1\|1 | 0.5\|. |
-| chr1 | 814641 | 0.5\|. | . \|1 |
+`{id}.hap1_counts`, `{id}.hap2_counts`, `{id}.hap1_cov`, `{id}.hap2_cov`, `{id}.hap1_percentage`, `{id}.hap2_percentage`
 
-- **Missing** or low coverage: `.` on that side (e.g. `.|0.4`, `0.5|.`, `.|.`).
-- **0** and **1**: written without decimal; other values use one decimal (e.g. `0.5`).
+| chr | pos | CHI01.hap1_counts | … | CHI01.hap2_percentage | CHI02.hap1_counts | … |
+|-----|-----|-------------------|---|-------------------------|-------------------|---|
+| chr1 | 1015144 | 3 | … | 100 | 2 | … |
+
+- **counts** / **cov**: from bedMethyl columns `N_modified` and valid coverage.
+- **percentage**: `percent_modified` (0–100) from bedMethyl.
+- **Missing** or low coverage: `.` for that haplotype field.
 
 ## Requirements
 
@@ -92,7 +94,7 @@ MergeBedMethyl/
 ## Input assumptions
 
 - bedMethyl files are **sorted** by chromosome and start (modkit default).
-- Column indices (0-based): start = 1, coverage = 9, percent modified = 10.
+- Column indices (0-based): start = 1, coverage = 9, percent modified = 10, N_modified = 11.
 
 ## License
 

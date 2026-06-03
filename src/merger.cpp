@@ -22,7 +22,12 @@ int run_merge(const ParsedArgs& args) {
     }
 
     out << "chr\tpos";
-    for (const auto& pair : pairs) out << '\t' << pair.label;
+    for (const auto& pair : pairs) {
+        const std::string& id = pair.label;
+        out << '\t' << id << ".hap1_counts" << '\t' << id << ".hap2_counts" << '\t' << id
+            << ".hap1_cov" << '\t' << id << ".hap2_cov" << '\t' << id << ".hap1_percentage"
+            << '\t' << id << ".hap2_percentage";
+    }
     out << '\n';
 
     const int num_samples = static_cast<int>(pairs.size());
@@ -55,7 +60,7 @@ int run_merge(const ParsedArgs& args) {
 
         out << target.chr << '\t' << target.pos;
         for (auto& pair : pairs) {
-            out << '\t' << format_pair_cell(pair.hp1, pair.hp2, target, min_coverage);
+            append_sample_columns(out, pair.hp1, pair.hp2, target, min_coverage);
         }
         out << '\n';
         ++rows;
