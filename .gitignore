@@ -45,6 +45,7 @@ Testing/
 # Local run outputs
 *.tsv
 !tests/data/*.bedmethyl
+!tests/expected/*.tsv
 merge_bedmethyl_*.out
 merge_bedmethyl_*.err
 
