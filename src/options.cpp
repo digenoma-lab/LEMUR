@@ -13,7 +13,8 @@ void print_usage(const char* prog) {
         << "                       Values are included only when coverage > N.\n"
         << "  -s, --min-samples M  Minimum samples with data required per row.\n"
         << "                       Default: N-1 (N = number of sample pairs).\n\n"
-        << "Writes chr, pos, then one column per sample (hp1|hp2; '.' if missing).\n"
+        << "Writes chr, pos, then per sample: hap1_counts, hap2_counts, hap1_cov,\n"
+        << "hap2_cov, hap1_percentage, hap2_percentage ('.' if missing).\n"
         << "Streams all inputs line-by-line; loci are merged on chr + start.\n";
 }
 

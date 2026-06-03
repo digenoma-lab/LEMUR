@@ -29,13 +29,14 @@ bool Reader::parse_line(const std::string& line, Record& rec) {
     std::string field;
     while (std::getline(iss, field, '\t')) fields.push_back(field);
 
-    if (static_cast<int>(fields.size()) <= kMethCol) return false;
+    if (static_cast<int>(fields.size()) <= kNModCol) return false;
 
     try {
         rec.locus.chr = fields[kChrCol];
         rec.locus.pos = std::stoi(fields[kStartCol]);
         rec.coverage = std::stoi(fields[kCovCol]);
-        rec.meth_frac = std::stod(fields[kMethCol]) / 100.0;
+        rec.meth_percent = std::stod(fields[kMethCol]);
+        rec.n_modified = std::stoi(fields[kNModCol]);
         rec.valid = true;
         return true;
     } catch (...) {

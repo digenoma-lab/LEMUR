@@ -7,7 +7,8 @@ namespace merge_bedmethyl {
 struct Record {
     Locus locus;
     int coverage = 0;
-    double meth_frac = 0.0;
+    int n_modified = 0;
+    double meth_percent = 0.0;
     bool valid = false;
 };
 

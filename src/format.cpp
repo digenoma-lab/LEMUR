@@ -5,25 +5,54 @@
 
 namespace merge_bedmethyl {
 
-std::string format_fraction(double value) {
-    constexpr double kEps = 1e-9;
-    if (value <= kEps) return "0";
-    if (value >= 1.0 - kEps) return "1";
-    std::ostringstream os;
-    os << std::fixed << std::setprecision(1) << value;
-    return os.str();
+namespace {
+
+template <typename T>
+void append_field(std::ostream& out, bool has, T value) {
+    out << '\t';
+    if (!has) {
+        out << '.';
+        return;
+    }
+    out << value;
 }
 
-std::string format_pair_cell(const Reader& a, const Reader& b, const Locus& target,
-                             int min_coverage) {
-    const bool has1 = passes_coverage(a, target, min_coverage);
-    const bool has2 = passes_coverage(b, target, min_coverage);
-
+void append_percent(std::ostream& out, bool has, double percent) {
+    out << '\t';
+    if (!has) {
+        out << '.';
+        return;
+    }
+    constexpr double kEps = 1e-9;
+    if (percent <= kEps) {
+        out << "0";
+        return;
+    }
+    if (percent >= 100.0 - kEps) {
+        out << "100";
+        return;
+    }
     std::ostringstream os;
-    os << (has1 ? format_fraction(a.current.meth_frac) : ".");
-    os << '|';
-    os << (has2 ? format_fraction(b.current.meth_frac) : ".");
-    return os.str();
+    os << std::fixed << std::setprecision(2) << percent;
+    std::string s = os.str();
+    while (!s.empty() && s.back() == '0') s.pop_back();
+    if (!s.empty() && s.back() == '.') s.pop_back();
+    out << s;
+}
+
+}  // namespace
+
+void append_sample_columns(std::ostream& out, const Reader& hp1, const Reader& hp2,
+                           const Locus& target, int min_coverage) {
+    const bool has1 = passes_coverage(hp1, target, min_coverage);
+    const bool has2 = passes_coverage(hp2, target, min_coverage);
+
+    append_field(out, has1, hp1.current.n_modified);
+    append_field(out, has2, hp2.current.n_modified);
+    append_field(out, has1, hp1.current.coverage);
+    append_field(out, has2, hp2.current.coverage);
+    append_percent(out, has1, hp1.current.meth_percent);
+    append_percent(out, has2, hp2.current.meth_percent);
 }
 
 }  // namespace merge_bedmethyl

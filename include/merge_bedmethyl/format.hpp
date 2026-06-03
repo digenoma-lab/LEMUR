@@ -3,12 +3,11 @@
 #include "merge_bedmethyl/locus.hpp"
 #include "merge_bedmethyl/reader.hpp"
 
-#include <string>
+#include <ostream>
 
 namespace merge_bedmethyl {
 
-std::string format_fraction(double value);
-std::string format_pair_cell(const Reader& a, const Reader& b, const Locus& target,
-                             int min_coverage);
+void append_sample_columns(std::ostream& out, const Reader& hp1, const Reader& hp2,
+                           const Locus& target, int min_coverage);
 
 }  // namespace merge_bedmethyl
