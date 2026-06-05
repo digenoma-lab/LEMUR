@@ -244,6 +244,10 @@ LEMUR/
 - bedMethyl files are **sorted** by chromosome and start (modkit default).
 - modkit bedMethyl column indices used (0-based): start = 1, valid coverage = 9, `percent_modified` = 10, `N_modified` = 11.
 
+## Author
+
+Gabriel Cabas
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
