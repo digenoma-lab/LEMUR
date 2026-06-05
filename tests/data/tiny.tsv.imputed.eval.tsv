@@ -1,0 +1,9 @@
+chr	pos	S1.hap1_frac_imputed	S1.hap2_counts	S1.hap2_cov	S1.hap2_percentage
+chr1	100	.	5	5	100
+chr1	120	.	0	3	0
+chr1	140	0.5	2	5	40
+chr1	160	0	1	4	25
+chr1	200	0.4	2	5	40
+chr1	220	.	3	6	50
+chr1	240	0.4	1	5	20
+chr1	260	0.3793	2	5	40
