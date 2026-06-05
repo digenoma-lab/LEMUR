@@ -19,3 +19,29 @@ add_test(
         ${CMAKE_CURRENT_SOURCE_DIR}/expected/merge_two_samples.tsv
 )
 set_tests_properties(merge_output_format PROPERTIES DEPENDS merge_two_samples)
+
+add_test(
+    NAME impute_stream_tiny
+    COMMAND impute_methylation -a 1 -b 1
+            ${TEST_DATA_DIR}/tiny.tsv
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_imputed.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_test(
+    NAME impute_output_columns
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_imputed.tsv
+            ${CMAKE_CURRENT_SOURCE_DIR}/expected/tiny_hap1_imputed.tsv
+)
+set_tests_properties(impute_output_columns PROPERTIES DEPENDS impute_stream_tiny)
+
+add_test(
+    NAME evaluate_tiny
+    COMMAND evaluate -c S1.hap1_counts -m 0.2 -s 42 -w 200 -n 5
+            ${TEST_DATA_DIR}/tiny.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+set_tests_properties(evaluate_tiny PROPERTIES
+    PASS_REGULAR_EXPRESSION "S1\\.hap1_frac_imputed.*MSE="
+)

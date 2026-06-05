@@ -63,7 +63,7 @@ cmake --build build
 make
 ```
 
-Binary: `build/merge_bedmethyl`
+Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/evaluate`
 
 ```bash
 cmake --install build   # optional, installs to CMAKE_INSTALL_PREFIX/bin
@@ -72,13 +72,18 @@ cmake --install build   # optional, installs to CMAKE_INSTALL_PREFIX/bin
 ## Usage
 
 ```bash
-merge_bedmethyl [-c N] [-s M] <output.tsv> <label1> <hp1> <hp2> [<label2> <hp3> <hp4> ...]
+merge_bedmethyl [-c N] [-s M] [--impute] [-w BP] [-a A] [-b B] [-n N] \
+  <output.tsv> <label1> <hp1> <hp2> [<label2> <hp3> <hp4> ...]
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-c`, `--min-cov N` | Include haplotype fields only if valid coverage (column 9) **>** N | `3` |
 | `-s`, `--min-samples M` | Minimum samples with data per row | `N-1` (N = number of pairs) |
+| `--impute` | After merge, run beta-binomial imputation (see below) | off |
+| `-w` | Imputation genomic window (bp, same chromosome) | `200` |
+| `-a`, `-b` | Beta-binomial prior α and β | `1`, `1` |
+| `-n` | Minimum valid neighbors in window to impute | `5` |
 | `-h`, `--help` | Show help | |
 
 ### Example
@@ -94,6 +99,34 @@ Require all samples at each site:
 ```bash
 ./build/merge_bedmethyl -s 2 -c 3 merged.tsv CHI01 ... CHI02 ...
 ```
+
+Merge and impute in one step (`--impute` writes `{id}.hap{1,2}_frac_imputed` columns instead of counts/cov/percentage):
+
+```bash
+./build/merge_bedmethyl --impute -w 200 -n 5 imputed.tsv \
+  CHI01 results/modkit/CHI01.bed/CHI01_hp1.bedmethyl results/modkit/CHI01.bed/CHI01_hp2.bedmethyl \
+  CHI02 results/modkit/CHI02.bed/CHI02_hp1.bedmethyl results/modkit/CHI02.bed/CHI02_hp2.bedmethyl
+```
+
+## Imputation (`impute_methylation`)
+
+Local **beta-binomial imputation** on an already-merged TSV (same format as merge output). Streams line by line; memory scales with window size × number of haplotype columns, not file size.
+
+```bash
+impute_methylation [-w 200] [-a 1] [-b 1] [-n 5] merged.tsv imputed.tsv
+```
+
+For each sample haplotype, drops `{id}.hap{1,2}_counts`, `_cov`, `_percentage` and writes `{id}.hap{1,2}_frac_imputed` (0–1). If there are fewer than `-n` valid neighbors but the site has coverage, falls back to the observed fraction (`counts/cov` or `percentage/100`); otherwise `.`.
+
+### Evaluation (`evaluate`)
+
+Hold-out benchmark on one counts column and one chromosome:
+
+```bash
+evaluate -c CHI08A.hap1_counts [-chr chr1] [-m 0.2] [-s 42] [-w 200] [-n 5] merged.tsv
+```
+
+Writes `merged.tsv.masked.tsv` and `merged.tsv.imputed.eval.tsv`, then prints MSE and Pearson on masked sites.
 
 ## Slurm
 
@@ -116,6 +149,8 @@ CTest runs:
 
 1. **merge_two_samples** — merges fixture bedMethyl pairs and checks row count.
 2. **merge_output_format** — compares output to `tests/expected/merge_two_samples.tsv` (see [Output format](#output-format)).
+3. **impute_stream_tiny** / **impute_output_columns** — imputation on `tests/data/tiny.tsv`.
+4. **evaluate_tiny** — hold-out evaluation metrics on the tiny fixture.
 
 ### Continuous integration
 
@@ -128,7 +163,9 @@ MergeBedMethyl/
 ├── CMakeLists.txt
 ├── Makefile              # wrapper around CMake
 ├── include/merge_bedmethyl/
+├── include/impute_methylation/
 ├── src/
+├── src/impute/           # beta-binomial imputation library
 ├── tests/data/           # small bedMethyl fixtures
 ├── tests/expected/     # golden TSV for output tests
 ├── .github/workflows/    # GitHub Actions CI

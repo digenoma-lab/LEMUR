@@ -1,8 +1,10 @@
+#include "impute_methylation/beta_binomial.hpp"
 #include "merge_bedmethyl/format.hpp"
 #include "merge_bedmethyl/merger.hpp"
 #include "merge_bedmethyl/reader.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 
@@ -15,9 +17,12 @@ int run_merge(const ParsedArgs& args) {
         pairs.emplace_back(sample.label, sample.hp1_path, sample.hp2_path);
     }
 
-    std::ofstream out(args.output_path);
+    const std::string merge_output_path =
+        args.options.impute ? args.output_path + ".merge.tmp" : args.output_path;
+
+    std::ofstream out(merge_output_path);
     if (!out) {
-        std::cerr << "Cannot open output: " << args.output_path << '\n';
+        std::cerr << "Cannot open output: " << merge_output_path << '\n';
         return 1;
     }
 
@@ -68,9 +73,28 @@ int run_merge(const ParsedArgs& args) {
         advance_readers_at_locus(pairs, target);
     }
 
-    std::cerr << "Wrote " << rows << " rows to " << args.output_path
+    out.close();
+
+    std::cerr << "Wrote " << rows << " rows to " << merge_output_path
               << " (min coverage > " << min_coverage << ", >= " << min_samples_with_info << "/"
               << num_samples << " samples per row)\n";
+
+    if (args.options.impute) {
+        try {
+            impute_methylation::stream_beta_binomial_impute_all(
+                merge_output_path, args.output_path, args.options.impute_options);
+        } catch (const std::exception& e) {
+            std::cerr << e.what() << '\n';
+            std::remove(merge_output_path.c_str());
+            return 1;
+        }
+        std::remove(merge_output_path.c_str());
+        std::cerr << "Imputed to " << args.output_path << " (window="
+                  << args.options.impute_options.window_bp
+                  << " bp, min_neighbors=" << args.options.impute_options.min_neighbors
+                  << ")\n";
+    }
+
     return 0;
 }
 

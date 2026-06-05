@@ -1,5 +1,7 @@
 #pragma once
 
+#include "impute_methylation/beta_binomial.hpp"
+
 #include <string>
 #include <vector>
 
@@ -14,6 +16,8 @@ struct SamplePair {
 struct Options {
     int min_coverage = 3;
     int min_samples = -1;  // unset: use N-1
+    bool impute = false;
+    impute_methylation::ImputeOptions impute_options;
 };
 
 struct ParsedArgs {

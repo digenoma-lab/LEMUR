@@ -15,7 +15,14 @@ void print_usage(const char* prog) {
         << "                       Default: N-1 (N = number of sample pairs).\n\n"
         << "Writes chr, pos, then per sample: hap1_counts, hap2_counts, hap1_cov,\n"
         << "hap2_cov, hap1_percentage, hap2_percentage ('.' if missing).\n"
-        << "Streams all inputs line-by-line; loci are merged on chr + start.\n";
+        << "Streams all inputs line-by-line; loci are merged on chr + start.\n\n"
+        << "Imputation (--impute):\n"
+        << "  --impute             After merge, run beta-binomial imputation on output.\n"
+        << "                       Output TSV contains {id}.hap{1,2}_frac_imputed columns only.\n"
+        << "  -w BP                 Genomic window in bp (default 200)\n"
+        << "  -a ALPHA              Beta-binomial prior alpha (default 1)\n"
+        << "  -b BETA               Beta-binomial prior beta (default 1)\n"
+        << "  -n MIN_NEIGHBORS      Minimum valid neighbors in window (default 5)\n";
 }
 
 int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
@@ -37,6 +44,37 @@ int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
                 return 1;
             }
             out.options.min_samples = std::stoi(argv[++argi]);
+            ++argi;
+        } else if (std::strcmp(argv[argi], "--impute") == 0) {
+            out.options.impute = true;
+            ++argi;
+        } else if (std::strcmp(argv[argi], "-w") == 0) {
+            if (argi + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            out.options.impute_options.window_bp = std::stoi(argv[++argi]);
+            ++argi;
+        } else if (std::strcmp(argv[argi], "-a") == 0) {
+            if (argi + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            out.options.impute_options.alpha = std::stod(argv[++argi]);
+            ++argi;
+        } else if (std::strcmp(argv[argi], "-b") == 0) {
+            if (argi + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            out.options.impute_options.beta = std::stod(argv[++argi]);
+            ++argi;
+        } else if (std::strcmp(argv[argi], "-n") == 0) {
+            if (argi + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            out.options.impute_options.min_neighbors = std::stoi(argv[++argi]);
             ++argi;
         } else if (std::strcmp(argv[argi], "-h") == 0 ||
                    std::strcmp(argv[argi], "--help") == 0) {
