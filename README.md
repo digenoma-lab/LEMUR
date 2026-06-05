@@ -3,7 +3,7 @@
 ### Local ancestry & Epigenetic Methylation for differential Regions
 
 <p align="center">
-  <img src="./imgs/logo.png" alt="LEMUR" width="220"/>
+  <img src="./imgs/logo.png" alt="LEMUR" width="400"/>
 </p>
 
 Stream-merge [modkit](https://github.com/nanoporetech/modkit) **bedMethyl** files from phased haplotypes into a single TSV matrix, with optional local beta-binomial imputation. Built for cohorts where each sample has `*_hp1.bedmethyl` and `*_hp2.bedmethyl` pairs.
