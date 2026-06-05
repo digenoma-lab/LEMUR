@@ -22,6 +22,11 @@ add_library(impute_methylation_lib
 )
 target_include_directories(impute_methylation_lib PUBLIC include)
 
+find_package(OpenMP)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(impute_methylation_lib PUBLIC OpenMP::OpenMP_CXX)
+endif()
+
 add_executable(merge_bedmethyl src/main.cpp)
 target_link_libraries(merge_bedmethyl PRIVATE merge_bedmethyl_lib impute_methylation_lib)
 

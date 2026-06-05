@@ -22,7 +22,8 @@ void print_usage(const char* prog) {
         << "  -w BP                 Genomic window in bp (default 200)\n"
         << "  -a ALPHA              Beta-binomial prior alpha (default 1)\n"
         << "  -b BETA               Beta-binomial prior beta (default 1)\n"
-        << "  -n MIN_NEIGHBORS      Minimum valid neighbors in window (default 5)\n";
+        << "  -n MIN_NEIGHBORS      Minimum valid neighbors in window (default 5)\n"
+        << "  -j N                  Parallel imputation samples (default 1; 0 = all cores)\n";
 }
 
 int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
@@ -75,6 +76,13 @@ int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
                 return 1;
             }
             out.options.impute_options.min_neighbors = std::stoi(argv[++argi]);
+            ++argi;
+        } else if (std::strcmp(argv[argi], "-j") == 0) {
+            if (argi + 1 >= argc) {
+                print_usage(argv[0]);
+                return 1;
+            }
+            out.options.impute_options.num_threads = std::stoi(argv[++argi]);
             ++argi;
         } else if (std::strcmp(argv[argi], "-h") == 0 ||
                    std::strcmp(argv[argi], "--help") == 0) {

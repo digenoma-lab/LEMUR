@@ -12,6 +12,7 @@ struct ImputeOptions {
     double alpha = 1.0;
     double beta = 1.0;
     int min_neighbors = 5;
+    int num_threads = 1;  // 0 = all available cores (OpenMP)
 };
 
 std::string format_fraction(double value);

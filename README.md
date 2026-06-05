@@ -84,6 +84,7 @@ merge_bedmethyl [-c N] [-s M] [--impute] [-w BP] [-a A] [-b B] [-n N] \
 | `-w` | Imputation genomic window (bp, same chromosome) | `200` |
 | `-a`, `-b` | Beta-binomial prior α and β | `1`, `1` |
 | `-n` | Minimum valid neighbors in window to impute | `5` |
+| `-j` | Parallel imputation by sample (`0` = all cores) | `1` |
 | `-h`, `--help` | Show help | |
 
 ### Example
@@ -110,10 +111,10 @@ Merge and impute in one step (`--impute` writes `{id}.hap{1,2}_frac_imputed` col
 
 ## Imputation (`impute_methylation`)
 
-Local **beta-binomial imputation** on an already-merged TSV (same format as merge output). Streams line by line; memory scales with window size × number of haplotype columns, not file size.
+Local **beta-binomial imputation** on an already-merged TSV (same format as merge output). Streams line by line; memory scales with window size × number of haplotype columns, not file size. Use `-j N` to process samples in parallel (OpenMP); each sample’s hap1/hap2 windows are independent.
 
 ```bash
-impute_methylation [-w 200] [-a 1] [-b 1] [-n 5] merged.tsv imputed.tsv
+impute_methylation [-w 200] [-a 1] [-b 1] [-n 5] [-j N] merged.tsv imputed.tsv
 ```
 
 For each sample haplotype, drops `{id}.hap{1,2}_counts`, `_cov`, `_percentage` and writes `{id}.hap{1,2}_frac_imputed` (0–1). If there are fewer than `-n` valid neighbors but the site has coverage, falls back to the observed fraction (`counts/cov` or `percentage/100`); otherwise `.`.
