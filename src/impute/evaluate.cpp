@@ -4,6 +4,7 @@
 #include "impute_methylation/tsv_io.hpp"
 
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -11,6 +12,10 @@
 #include <stdexcept>
 #include <unordered_map>
 #include <vector>
+
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 namespace impute_methylation {
 
@@ -85,9 +90,9 @@ void add_pair(MetricAccum& acc, double pred, double truth) {
     ++acc.n;
 }
 
-EvaluateMetrics finalize_metrics(MetricAccum& acc) {
+EvaluateMetrics finalize_metrics(MetricAccum& acc, std::size_t n_masked) {
     EvaluateMetrics m;
-    m.n_masked = acc.n;
+    m.n_masked = n_masked;
     m.n_scored = acc.n;
     if (acc.n == 0) {
         m.mse = kNaN;
@@ -113,6 +118,44 @@ EvaluateMetrics finalize_metrics(MetricAccum& acc) {
 
 std::string site_key(const std::string& chr, int pos) {
     return chr + '\t' + std::to_string(pos);
+}
+
+std::string format_metric(double value) {
+    if (is_nan(value)) return "nan";
+    std::ostringstream os;
+    os << std::fixed << std::setprecision(6) << value;
+    return os.str();
+}
+
+std::string cohort_work_dir(const std::string& output_path) {
+    const std::filesystem::path out(output_path);
+    return (out.parent_path() / (out.stem().string() + ".evaluate.work")).string();
+}
+
+std::string target_sidecar_path(const std::string& work_dir, const HaplotypeTarget& target,
+                                const std::string& suffix) {
+    return work_dir + "/" + target.sample_id + "." + target.hap + suffix;
+}
+
+EvaluateCohortRow metrics_to_row(const HaplotypeTarget& target, const EvaluateOptions& opts,
+                                 const EvaluateMetrics& metrics) {
+    EvaluateCohortRow row;
+    row.sample = target.sample_id + "." + target.hap;
+    row.window_size = opts.impute.window_bp;
+    row.n_neighbors = opts.impute.min_neighbors;
+    row.a = opts.impute.alpha;
+    row.b = opts.impute.beta;
+    row.chr = opts.chromosome;
+    row.pearson = metrics.pearson;
+    row.mse = metrics.mse;
+    row.count_masked = metrics.n_masked;
+    row.count_imputed = metrics.n_scored;
+    return row;
+}
+
+void remove_if_exists(const std::string& path) {
+    std::error_code ec;
+    std::filesystem::remove(path, ec);
 }
 
 }  // namespace
@@ -191,11 +234,18 @@ EvaluateMetrics run_evaluate(const std::string& input_path, const EvaluateOption
         throw std::runtime_error("No rows on chromosome: " + opts.chromosome);
     }
 
-    std::cerr << "Chromosome " << opts.chromosome << " (" << n_rows_chr << " sites), column "
-              << target.y_col << ": masked " << holdouts.size() << " (~"
-              << opts.mask_fraction * 100 << "% of valid on this chr) → " << masked_path << '\n';
+    const std::size_t n_masked = holdouts.size();
 
-    stream_beta_binomial_impute_targets(masked_path, imputed_path, targets, opts.impute);
+    if (!opts.quiet) {
+        std::cerr << "Chromosome " << opts.chromosome << " (" << n_rows_chr << " sites), column "
+                  << target.y_col << ": masked " << n_masked << " (~"
+                  << opts.mask_fraction * 100 << "% of valid on this chr) → " << masked_path
+                  << '\n';
+    }
+
+    ImputeOptions impute_opts = opts.impute;
+    impute_opts.num_threads = 1;
+    stream_beta_binomial_impute_targets(masked_path, imputed_path, targets, impute_opts);
 
     std::ifstream imp_in(imputed_path);
     if (!imp_in) throw std::runtime_error("Cannot open imputed: " + imputed_path);
@@ -229,20 +279,108 @@ EvaluateMetrics run_evaluate(const std::string& input_path, const EvaluateOption
         holdouts.erase(it);
     }
 
-    const EvaluateMetrics metrics = finalize_metrics(acc);
+    const EvaluateMetrics metrics = finalize_metrics(acc, n_masked);
 
-    std::cerr << "\n=== Evaluation (masked hold-out, MSE & Pearson) ===\n";
-    std::cerr << std::fixed << std::setprecision(6);
-    std::cerr << "chromosome=" << opts.chromosome << " column=" << target.y_col
-              << " mask_fraction=" << opts.mask_fraction << " seed=" << opts.seed
-              << " window=" << opts.impute.window_bp
-              << " min_neighbors=" << opts.impute.min_neighbors << "\n\n";
-    std::cerr << target.out_col << "\tmasked=" << metrics.n_masked
-              << "\tscored=" << metrics.n_scored << "\tMSE=" << metrics.mse
-              << "\tPearson=" << metrics.pearson << '\n';
-    std::cerr << "Imputed file: " << imputed_path << '\n';
+    if (!opts.quiet) {
+        std::cerr << "\n=== Evaluation (masked hold-out, MSE & Pearson) ===\n";
+        std::cerr << std::fixed << std::setprecision(6);
+        std::cerr << "chromosome=" << opts.chromosome << " column=" << target.y_col
+                  << " mask_fraction=" << opts.mask_fraction << " seed=" << opts.seed
+                  << " window=" << opts.impute.window_bp
+                  << " min_neighbors=" << opts.impute.min_neighbors << "\n\n";
+        std::cerr << target.out_col << "\tmasked=" << metrics.n_masked
+                  << "\tscored=" << metrics.n_scored << "\tMSE=" << metrics.mse
+                  << "\tPearson=" << metrics.pearson << '\n';
+        std::cerr << "Imputed file: " << imputed_path << '\n';
+    }
 
     return metrics;
+}
+
+std::vector<EvaluateCohortRow> run_evaluate_cohort(const std::string& input_path,
+                                                   const EvaluateCohortOptions& opts) {
+    if (opts.output_path.empty()) {
+        throw std::runtime_error("EvaluateCohortOptions.output_path is required");
+    }
+
+    std::ifstream in(input_path);
+    if (!in) throw std::runtime_error("Cannot open input: " + input_path);
+
+    std::string line;
+    if (!std::getline(in, line)) throw std::runtime_error("Empty input: " + input_path);
+    in.close();
+
+    const std::vector<std::string> input_header = split_tab(line);
+    const std::vector<HaplotypeTarget> targets = discover_haplotype_targets(input_header);
+    if (targets.empty()) {
+        throw std::runtime_error("No {sample}.hap{1,2}_counts columns found in header");
+    }
+
+    const std::string work_dir = cohort_work_dir(opts.output_path);
+    std::filesystem::create_directories(work_dir);
+
+    std::vector<EvaluateCohortRow> rows(targets.size());
+
+#ifdef _OPENMP
+    const int prev_threads = omp_get_max_threads();
+    if (opts.impute.num_threads > 0) {
+        omp_set_num_threads(opts.impute.num_threads);
+    }
+#endif
+
+#pragma omp parallel for schedule(dynamic) default(none) shared( \
+    input_path, opts, targets, rows, work_dir) if (targets.size() > 1)
+    for (std::size_t t = 0; t < targets.size(); ++t) {
+        EvaluateOptions single;
+        single.y_col = targets[t].y_col;
+        single.chromosome = opts.chromosome;
+        single.mask_fraction = opts.mask_fraction;
+        single.seed = opts.seed;
+        single.impute = opts.impute;
+        single.impute.num_threads = 1;
+        single.quiet = true;
+        single.masked_path = target_sidecar_path(work_dir, targets[t], ".masked.tsv");
+        single.imputed_path = target_sidecar_path(work_dir, targets[t], ".imputed.eval.tsv");
+
+        const EvaluateMetrics metrics = run_evaluate(input_path, single);
+        rows[t] = metrics_to_row(targets[t], single, metrics);
+
+        if (!opts.keep_sidecars) {
+            remove_if_exists(single.masked_path);
+            remove_if_exists(single.imputed_path);
+        }
+    }
+
+#ifdef _OPENMP
+    if (opts.impute.num_threads > 0) {
+        omp_set_num_threads(prev_threads);
+    }
+#endif
+
+    if (!opts.keep_sidecars) {
+        std::error_code ec;
+        std::filesystem::remove_all(work_dir, ec);
+    }
+
+    write_evaluate_cohort_tsv(opts.output_path, rows);
+
+    std::cerr << "Evaluated " << rows.size() << " haplotype columns on " << opts.chromosome
+              << " → " << opts.output_path << '\n';
+
+    return rows;
+}
+
+void write_evaluate_cohort_tsv(const std::string& path,
+                               const std::vector<EvaluateCohortRow>& rows) {
+    std::ofstream out(path);
+    if (!out) throw std::runtime_error("Cannot open cohort output: " + path);
+
+    out << "sample\twindow_size\tn_neighbors\ta\tb\tchr\tpearson\tmse\tcount_masked\tcount_imputed\n";
+    for (const auto& r : rows) {
+        out << r.sample << '\t' << r.window_size << '\t' << r.n_neighbors << '\t' << r.a << '\t'
+            << r.b << '\t' << r.chr << '\t' << format_metric(r.pearson) << '\t'
+            << format_metric(r.mse) << '\t' << r.count_masked << '\t' << r.count_imputed << '\n';
+    }
 }
 
 }  // namespace impute_methylation

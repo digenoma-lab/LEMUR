@@ -45,3 +45,14 @@ add_test(
 set_tests_properties(evaluate_tiny PROPERTIES
     PASS_REGULAR_EXPRESSION "S1\\.hap1_frac_imputed.*MSE="
 )
+
+add_test(
+    NAME evaluate_cohort_tiny
+    COMMAND evaluate -chr chr1 -m 0.2 -s 42 -w 200 -n 1 -j 2
+            -o ${CMAKE_CURRENT_BINARY_DIR}/tiny.cohort.eval.tsv
+            ${TEST_DATA_DIR}/tiny.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+set_tests_properties(evaluate_cohort_tiny PROPERTIES
+    PASS_REGULAR_EXPRESSION "Evaluated 2 haplotype columns"
+)
