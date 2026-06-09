@@ -9,16 +9,20 @@ namespace {
 void print_usage(const char* prog) {
     std::cerr
         << "Usage: " << prog
-        << " [-w BP] [-a ALPHA] [-b BETA] [-n MIN_NEIGHBORS] [-j N] <input.tsv> <output.tsv>\n\n"
-        << "Local beta-binomial imputation for all samples/haplotypes in the TSV (streaming).\n"
+        << " [-w BP] [-a ALPHA] [-b BETA] [-n MIN_NEIGHBORS] [-j N] [--hap] <input.tsv> <output.tsv>\n\n"
+        << "Local beta-binomial imputation for all samples in the TSV (streaming).\n"
         << "  -w   Genomic window in bp (default 200)\n"
         << "  -a   Beta-binomial prior alpha (default 1)\n"
         << "  -b   Beta-binomial prior beta (default 1)\n"
         << "  -n   Minimum valid neighbors in window (default 5)\n"
-        << "  -j   Parallel samples (default 1; 0 = all cores)\n\n"
-        << "Detects every {id}.hap1_counts / {id}.hap2_counts pair with matching _cov.\n"
-        << "Drops _counts, _cov, _percentage; writes _frac_imputed (fallback: observed fraction).\n"
-        << "Memory: O(num_haplotypes * window sites), not file size.\n";
+        << "  -j   Parallel samples (default 1; 0 = all cores)\n"
+        << "  --hap  Input has phased haplotype columns per sample\n\n"
+        << "Sample mode (default): detects {id}.counts with matching .cov / .percentage;\n"
+        << "writes {id}.frac_imputed.\n"
+        << "Haplotype mode (--hap): detects {id}.hap1_counts / {id}.hap2_counts pairs;\n"
+        << "writes {id}.hap{1,2}_frac_imputed.\n"
+        << "Drops source counts/cov/percentage columns (fallback: observed fraction).\n"
+        << "Memory: O(num_targets * window sites), not file size.\n";
 }
 
 bool parse_args(int argc, char* argv[], impute_methylation::ImputeOptions& opts,
@@ -35,6 +39,8 @@ bool parse_args(int argc, char* argv[], impute_methylation::ImputeOptions& opts,
             opts.min_neighbors = std::stoi(argv[++argi]);
         } else if (std::strcmp(argv[argi], "-j") == 0 && argi + 1 < argc) {
             opts.num_threads = std::stoi(argv[++argi]);
+        } else if (std::strcmp(argv[argi], "--hap") == 0) {
+            opts.hap_mode = true;
         } else if (std::strcmp(argv[argi], "-h") == 0 ||
                    std::strcmp(argv[argi], "--help") == 0) {
             print_usage(argv[0]);
@@ -71,7 +77,8 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::cerr << "Wrote " << output << " (all sample haplotypes, window=" << opts.window_bp
+    std::cerr << "Wrote " << output << " ("
+              << (opts.hap_mode ? "haplotype" : "sample") << " mode, window=" << opts.window_bp
               << " bp, min_neighbors=" << opts.min_neighbors << ", streaming)\n";
     return 0;
 }

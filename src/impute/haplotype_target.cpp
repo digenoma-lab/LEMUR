@@ -12,6 +12,14 @@ namespace impute_methylation {
 
 namespace {
 
+bool parse_sample_counts_column(const std::string& col, std::string& sample_id) {
+    const std::string suffix = ".counts";
+    if (col.size() <= suffix.size()) return false;
+    if (col.compare(col.size() - suffix.size(), suffix.size(), suffix) != 0) return false;
+    sample_id = col.substr(0, col.size() - suffix.size());
+    return !sample_id.empty();
+}
+
 bool parse_counts_column(const std::string& col, std::string& sample_id, std::string& hap) {
     const std::string suffix = "_counts";
     if (col.size() <= suffix.size()) return false;
@@ -62,6 +70,33 @@ std::vector<HaplotypeTarget> discover_haplotype_targets(
         t.pct_col = sample_id + "." + hap + "_percentage";
         t.pct_idx = column_index(header, t.pct_col);
         t.out_col = sample_id + "." + hap + "_frac_imputed";
+        targets.push_back(std::move(t));
+    }
+    return targets;
+}
+
+std::vector<HaplotypeTarget> discover_sample_targets(
+    const std::vector<std::string>& header) {
+    std::vector<HaplotypeTarget> targets;
+    targets.reserve(header.size() / 3);
+
+    for (std::size_t i = 0; i < header.size(); ++i) {
+        std::string sample_id;
+        if (!parse_sample_counts_column(header[i], sample_id)) continue;
+
+        const std::string n_col = sample_id + ".cov";
+        const int n_idx = column_index(header, n_col);
+        if (n_idx < 0) continue;
+
+        HaplotypeTarget t;
+        t.sample_id = sample_id;
+        t.y_idx = static_cast<int>(i);
+        t.n_idx = n_idx;
+        t.y_col = header[i];
+        t.n_col = n_col;
+        t.pct_col = sample_id + ".percentage";
+        t.pct_idx = column_index(header, t.pct_col);
+        t.out_col = sample_id + ".frac_imputed";
         targets.push_back(std::move(t));
     }
     return targets;

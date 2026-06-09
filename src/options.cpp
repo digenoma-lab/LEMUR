@@ -8,19 +8,13 @@ namespace merge_bedmethyl {
 void print_usage(const char* prog) {
     std::cerr
         << "Usage: " << prog
-        << " [-c N] [-s M] [--hap] <output.tsv> <inputs...>\n\n"
-        << "  Sample mode (default):\n"
-        << "    <output.tsv> <label1> <file1> [<label2> <file2> ...]\n"
-        << "  Haplotype mode (--hap):\n"
-        << "    <output.tsv> <label1> <hp1> <hp2> [<label2> <hp3> <hp4> ...]\n\n"
+        << " [-c N] [-s M] <output.tsv> <label1> <hp1> <hp2> ...\n\n"
         << "  -c, --min-cov N      Minimum coverage to report (column 10; default 3).\n"
         << "                       Values are included only when coverage > N.\n"
         << "  -s, --min-samples M  Minimum samples with data required per row.\n"
-        << "                       Default: N-1 (N = number of samples).\n"
-        << "  --hap                Expect phased haplotype pairs per sample.\n\n"
-        << "Sample mode writes chr, pos, then per sample: counts, cov, percentage.\n"
-        << "Haplotype mode writes hap1_counts, hap2_counts, hap1_cov, hap2_cov,\n"
-        << "hap1_percentage, hap2_percentage ('.' if missing).\n"
+        << "                       Default: N-1 (N = number of sample pairs).\n\n"
+        << "Writes chr, pos, then per sample: hap1_counts, hap2_counts, hap1_cov,\n"
+        << "hap2_cov, hap1_percentage, hap2_percentage ('.' if missing).\n"
         << "Streams all inputs line-by-line; loci are merged on chr + start.\n\n"
         << "Imputation (--impute):\n"
         << "  --impute             After merge, run beta-binomial imputation on output.\n"
@@ -51,9 +45,6 @@ int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
                 return 1;
             }
             out.options.min_samples = std::stoi(argv[++argi]);
-            ++argi;
-        } else if (std::strcmp(argv[argi], "--hap") == 0) {
-            out.options.hap_mode = true;
             ++argi;
         } else if (std::strcmp(argv[argi], "--impute") == 0) {
             out.options.impute = true;
@@ -106,23 +97,16 @@ int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
     }
 
     const int positional = argc - argi;
-    const int fields_per_sample = out.options.hap_mode ? 3 : 2;
-    const int min_positional = 1 + fields_per_sample;
-
-    if (positional < min_positional || (positional - 1) % fields_per_sample != 0) {
+    if (positional < 4 || (positional - 1) % 3 != 0) {
         print_usage(argv[0]);
         return 1;
     }
 
     out.output_path = argv[argi];
-    out.samples.reserve((positional - 1) / fields_per_sample);
+    out.samples.reserve((positional - 1) / 3);
 
-    for (int i = argi + 1; i < argc; i += fields_per_sample) {
-        if (out.options.hap_mode) {
-            out.samples.push_back({argv[i], argv[i + 1], argv[i + 2]});
-        } else {
-            out.samples.push_back({argv[i], argv[i + 1], ""});
-        }
+    for (int i = argi + 1; i < argc; i += 3) {
+        out.samples.push_back({argv[i], argv[i + 1], argv[i + 2]});
     }
 
     return 0;

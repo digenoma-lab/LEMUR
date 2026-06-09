@@ -183,9 +183,13 @@ void stream_beta_binomial_impute_all(const std::string& input_path,
     if (!std::getline(in, line)) throw std::runtime_error("Empty input: " + input_path);
 
     const std::vector<std::string> input_header = split_tab(line);
-    const std::vector<HaplotypeTarget> targets = discover_haplotype_targets(input_header);
+    const std::vector<HaplotypeTarget> targets =
+        opts.hap_mode ? discover_haplotype_targets(input_header)
+                      : discover_sample_targets(input_header);
     if (targets.empty()) {
-        throw std::runtime_error("No {sample}.hap{1,2}_counts columns found in header");
+        throw std::runtime_error(opts.hap_mode
+                                     ? "No {sample}.hap{1,2}_counts columns found in header"
+                                     : "No {sample}.counts columns found in header");
     }
 
     stream_beta_binomial_impute_targets(input_path, output_path, targets, opts);
