@@ -6,13 +6,13 @@
   <img src="./imgs/logo.png" alt="LEMUR" width="400"/>
 </p>
 
-Stream-merge [modkit](https://github.com/nanoporetech/modkit) **bedMethyl** files from phased haplotypes into a single TSV matrix, with optional local beta-binomial imputation. Built for cohorts where each sample has `*_hp1.bedmethyl` and `*_hp2.bedmethyl` pairs.
+Stream-merge [modkit](https://github.com/nanoporetech/modkit) **bedMethyl** files into a single TSV matrix, with optional local beta-binomial imputation. Supports one file per sample (default) or phased haplotype pairs (`--hap`).
 
 Three command-line tools:
 
 | Tool | Purpose |
 |------|---------|
-| `merge_bedmethyl` | Merge haplotype bedMethyl pairs into one TSV |
+| `merge_bedmethyl` | Merge bedMethyl files into one TSV (per-sample or phased haplotype pairs) |
 | `impute_methylation` | Impute missing methylation on an already-merged TSV |
 | `evaluate` | Hold-out benchmark for imputation on one haplotype column |
 
@@ -24,6 +24,8 @@ Tab-separated values (TSV). The first two columns are shared across all samples:
 |--------|-------------|
 | `chr` | Chromosome |
 | `pos` | Start position (bedMethyl start, 0-based) |
+
+#### Haplotype mode (`--hap`)
 
 For each sample label `{id}` given on the command line, six columns are appended **in this order**:
 
@@ -58,6 +60,24 @@ Meaning at `chr1:100`:
 If a haplotype has no row at the locus, or its coverage does not pass `-c` (coverage must be **>** N), all six fields for that haplotype are written as `.` (e.g. `.\t.\t.\t.\t.\t.` for both haplotypes of one sample).
 
 A row is emitted only when at least `-s` samples have data at that locus (at least one haplotype per sample above the coverage threshold).
+
+#### Sample mode (default)
+
+For each sample label `{id}`, three columns are appended:
+
+| Column | Source (bedMethyl) | Description |
+|--------|-------------------|-------------|
+| `{id}.counts` | `N_modified` | Methylated read count |
+| `{id}.cov` | valid coverage | Coverage at the locus |
+| `{id}.percentage` | `percent_modified` | Methylation 0–100 |
+
+With two samples `S1` and `S2`, the header is:
+
+```
+chr	pos	S1.counts	S1.cov	S1.percentage	S2.counts	S2.cov	S2.percentage
+```
+
+If a sample has no row at the locus, or its coverage does not pass `-c`, all three fields are written as `.`.
 
 ### Percentage formatting
 
@@ -117,15 +137,20 @@ cmake --install build   # optional, installs to CMAKE_INSTALL_PREFIX/bin
 ### `merge_bedmethyl`
 
 ```bash
-merge_bedmethyl [-c N] [-s M] [--impute] [-w BP] [-a A] [-b B] [-n N] [-j N] \
+# Sample mode (default): one bedMethyl per sample
+merge_bedmethyl [-c N] [-s M] <output.tsv> <label1> <file1> [<label2> <file2> ...]
+
+# Haplotype mode: phased hp1/hp2 pair per sample
+merge_bedmethyl --hap [-c N] [-s M] [--impute] [-w BP] [-a A] [-b B] [-n N] [-j N] \
   <output.tsv> <label1> <hp1> <hp2> [<label2> <hp3> <hp4> ...]
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-c`, `--min-cov N` | Include haplotype fields only if valid coverage (column 9) **>** N | `3` |
-| `-s`, `--min-samples M` | Minimum samples with data per row | `N-1` (N = number of pairs) |
-| `--impute` | After merge, run beta-binomial imputation (see [Output format (imputed)](#output-format-imputed)) | off |
+| `--hap` | Expect phased haplotype pairs per sample (`id hp1 hp2`) | off (one file per sample) |
+| `-c`, `--min-cov N` | Include fields only if valid coverage (column 9) **>** N | `3` |
+| `-s`, `--min-samples M` | Minimum samples with data per row | `N-1` (N = number of samples) |
+| `--impute` | After merge, run beta-binomial imputation (requires `--hap`; see [Output format (imputed)](#output-format-imputed)) | off |
 | `-w` | Imputation genomic window (bp, same chromosome) | `200` |
 | `-a`, `-b` | Beta-binomial prior α and β | `1`, `1` |
 | `-n` | Minimum valid neighbors in window to impute | `5` |
@@ -136,22 +161,32 @@ With `--impute`, merge writes a temporary TSV internally, imputes all sample hap
 
 #### Example
 
+Haplotype merge:
+
 ```bash
-./build/merge_bedmethyl merged.tsv \
+./build/merge_bedmethyl --hap merged.tsv \
   CHI01 results/modkit/CHI01.bed/CHI01_hp1.bedmethyl results/modkit/CHI01.bed/CHI01_hp2.bedmethyl \
   CHI02 results/modkit/CHI02.bed/CHI02_hp1.bedmethyl results/modkit/CHI02.bed/CHI02_hp2.bedmethyl
+```
+
+Sample merge (one combined bedMethyl per sample):
+
+```bash
+./build/merge_bedmethyl merged.tsv \
+  CHI01 results/modkit/CHI01.bed/CHI01_combined.bedmethyl \
+  CHI02 results/modkit/CHI02.bed/CHI02_combined.bedmethyl
 ```
 
 Require all samples at each site:
 
 ```bash
-./build/merge_bedmethyl -s 2 -c 3 merged.tsv CHI01 ... CHI02 ...
+./build/merge_bedmethyl --hap -s 2 -c 3 merged.tsv CHI01 ... CHI02 ...
 ```
 
 Merge and impute in one step:
 
 ```bash
-./build/merge_bedmethyl --impute -w 200 -n 5 -j 4 imputed.tsv \
+./build/merge_bedmethyl --hap --impute -w 200 -n 5 -j 4 imputed.tsv \
   CHI01 results/modkit/CHI01.bed/CHI01_hp1.bedmethyl results/modkit/CHI01.bed/CHI01_hp2.bedmethyl \
   CHI02 results/modkit/CHI02.bed/CHI02_hp1.bedmethyl results/modkit/CHI02.bed/CHI02_hp2.bedmethyl
 ```

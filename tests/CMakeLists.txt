@@ -2,11 +2,30 @@ set(TEST_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
 add_test(
     NAME merge_two_samples
-    COMMAND merge_bedmethyl -c 3 -s 2 ${CMAKE_CURRENT_BINARY_DIR}/test_out.tsv
+    COMMAND merge_bedmethyl --hap -c 3 -s 2 ${CMAKE_CURRENT_BINARY_DIR}/test_out.tsv
             S1 ${TEST_DATA_DIR}/S1_hp1.bedmethyl ${TEST_DATA_DIR}/S1_hp2.bedmethyl
             S2 ${TEST_DATA_DIR}/S2_hp1.bedmethyl ${TEST_DATA_DIR}/S2_hp2.bedmethyl
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
+
+add_test(
+    NAME merge_two_samples_single
+    COMMAND merge_bedmethyl -c 3 -s 2 ${CMAKE_CURRENT_BINARY_DIR}/test_out_single.tsv
+            S1 ${TEST_DATA_DIR}/S1_hp1.bedmethyl
+            S2 ${TEST_DATA_DIR}/S2_hp1.bedmethyl
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+set_tests_properties(merge_two_samples_single PROPERTIES
+    PASS_REGULAR_EXPRESSION "Wrote 1 rows"
+)
+
+add_test(
+    NAME merge_output_format_single
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+        ${CMAKE_CURRENT_BINARY_DIR}/test_out_single.tsv
+        ${CMAKE_CURRENT_SOURCE_DIR}/expected/merge_two_samples_single.tsv
+)
+set_tests_properties(merge_output_format_single PROPERTIES DEPENDS merge_two_samples_single)
 
 set_tests_properties(merge_two_samples PROPERTIES
     PASS_REGULAR_EXPRESSION "Wrote 1 rows"

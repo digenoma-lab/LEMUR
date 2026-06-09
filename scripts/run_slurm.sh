@@ -29,7 +29,7 @@ if [[ -z "${SAMPLES:-}" ]]; then
     exit 1
 fi
 
-args=(-c "${MIN_COV}")
+args=(--hap -c "${MIN_COV}")
 if [[ -n "${MIN_SAMPLES}" ]]; then
     args+=(-s "${MIN_SAMPLES}")
 fi

@@ -49,6 +49,9 @@ PairReaders::PairReaders(std::string sample_label, std::string path1, std::strin
       hp1(std::move(path1), label + "_hp1"),
       hp2(std::move(path2), label + "_hp2") {}
 
+SingleReader::SingleReader(std::string sample_label, std::string path)
+    : label(std::move(sample_label)), reader(std::move(path), label) {}
+
 void skip_until(Reader& r, const Locus& target) {
     while (!r.eof() && r.current.locus < target) r.advance();
 }
@@ -68,9 +71,29 @@ Locus min_locus(const std::vector<PairReaders>& pairs) {
     return min_l;
 }
 
+Locus min_locus(const std::vector<SingleReader>& samples) {
+    Locus min_l;
+    bool first = true;
+    for (const auto& sample : samples) {
+        if (sample.reader.eof()) continue;
+        if (first || sample.reader.current.locus < min_l) {
+            min_l = sample.reader.current.locus;
+            first = false;
+        }
+    }
+    return min_l;
+}
+
 bool any_valid(const std::vector<PairReaders>& pairs) {
     for (const auto& pair : pairs) {
         if (!pair.hp1.eof() || !pair.hp2.eof()) return true;
+    }
+    return false;
+}
+
+bool any_valid(const std::vector<SingleReader>& samples) {
+    for (const auto& sample : samples) {
+        if (!sample.reader.eof()) return true;
     }
     return false;
 }
@@ -79,6 +102,14 @@ void advance_readers_at_locus(std::vector<PairReaders>& pairs, const Locus& targ
     for (auto& pair : pairs) {
         if (!pair.hp1.eof() && pair.hp1.current.locus == target) pair.hp1.advance();
         if (!pair.hp2.eof() && pair.hp2.current.locus == target) pair.hp2.advance();
+    }
+}
+
+void advance_readers_at_locus(std::vector<SingleReader>& samples, const Locus& target) {
+    for (auto& sample : samples) {
+        if (!sample.reader.eof() && sample.reader.current.locus == target) {
+            sample.reader.advance();
+        }
     }
 }
 
@@ -91,11 +122,24 @@ bool sample_has_information(const PairReaders& pair, const Locus& target, int mi
            passes_coverage(pair.hp2, target, min_coverage);
 }
 
+bool sample_has_information(const SingleReader& sample, const Locus& target, int min_coverage) {
+    return passes_coverage(sample.reader, target, min_coverage);
+}
+
 int count_samples_with_information(const std::vector<PairReaders>& pairs, const Locus& target,
                                    int min_coverage) {
     int count = 0;
     for (const auto& pair : pairs) {
         if (sample_has_information(pair, target, min_coverage)) ++count;
+    }
+    return count;
+}
+
+int count_samples_with_information(const std::vector<SingleReader>& samples,
+                                   const Locus& target, int min_coverage) {
+    int count = 0;
+    for (const auto& sample : samples) {
+        if (sample_has_information(sample, target, min_coverage)) ++count;
     }
     return count;
 }

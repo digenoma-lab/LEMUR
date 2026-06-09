@@ -7,15 +7,16 @@
 
 namespace merge_bedmethyl {
 
-struct SamplePair {
+struct SampleInput {
     std::string label;
-    std::string hp1_path;
-    std::string hp2_path;
+    std::string path1;
+    std::string path2;  // hap mode only
 };
 
 struct Options {
     int min_coverage = 3;
     int min_samples = -1;  // unset: use N-1
+    bool hap_mode = false;
     bool impute = false;
     impute_methylation::ImputeOptions impute_options;
 };
@@ -23,7 +24,7 @@ struct Options {
 struct ParsedArgs {
     Options options;
     std::string output_path;
-    std::vector<SamplePair> samples;
+    std::vector<SampleInput> samples;
     bool show_help = false;
 };
 
