@@ -38,6 +38,10 @@ std::vector<HaplotypeTarget> discover_sample_targets(
 HaplotypeTarget find_haplotype_target(const std::vector<std::string>& header,
                                       const std::string& y_col);
 
+// y_col must be a {sample}.counts column name from the header.
+HaplotypeTarget find_sample_target(const std::vector<std::string>& header,
+                                   const std::string& y_col);
+
 struct OutputColumnPlan {
     std::vector<std::string> header;
     std::unordered_set<std::string> drop_cols;

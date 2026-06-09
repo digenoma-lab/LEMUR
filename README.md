@@ -14,7 +14,7 @@ Three command-line tools:
 |------|---------|
 | `merge_bedmethyl` | Merge haplotype bedMethyl pairs into one TSV |
 | `impute_methylation` | Impute missing methylation on an already-merged TSV |
-| `evaluate` | Hold-out benchmark for imputation on one haplotype column |
+| `evaluate` | Hold-out benchmark for imputation (per-sample or per-haplotype) |
 
 ## Output format (merge)
 
@@ -187,25 +187,35 @@ Other columns (e.g. `chr`, `pos`) are preserved.
 
 ### `evaluate`
 
-Hold-out benchmark on one counts column and one chromosome:
+Hold-out benchmark with mask-and-impute scoring.
 
 ```bash
-evaluate -c CHI08A.hap1_counts [-chr chr1] [-m 0.2] [-s 42] [-w 200] [-a 1] [-b 1] [-n 5] merged.tsv
+# Single target, sample mode (default)
+evaluate -c CHI08A.counts [-chr chr1] [-m 0.2] [-s 42] [-w 200] [-a 1] [-b 1] [-n 5] merged.tsv
+
+# Single target, haplotype mode
+evaluate --hap -c CHI08A.hap1_counts [-chr chr1] ... merged.tsv
+
+# Cohort mode: evaluate all sample/haplotype columns in parallel
+evaluate -o cohort.eval.tsv [-chr chr1] [-m 0.2] [-s 42] [-w 200] [-n 5] [-j N] merged.tsv
+evaluate --hap -o cohort.eval.tsv ... merged.tsv
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-c` | Counts column to evaluate (required) | — |
+| `--hap` | Input has `{id}.hap1_counts` / `{id}.hap2_counts` columns | off (`{id}.counts`) |
+| `-c` | Counts column for single-target mode | — |
+| `-o` | Cohort summary TSV (required without `-c`) | — |
 | `-chr` | Chromosome to mask, impute, and score | `chr1` |
 | `-m` | Fraction of valid sites to mask (hold-out) | `0.2` |
 | `-s` | RNG seed for reproducible mask | `42` |
-| `-w`, `-a`, `-b`, `-n` | Same as `impute_methylation` | `200`, `1`, `1`, `5` |
+| `-w`, `-a`, `-b`, `-n`, `-j` | Same as `impute_methylation` | `200`, `1`, `1`, `5`, `1` |
 
 Workflow:
 
 1. Masks a reproducible fraction of valid sites in the chosen counts/cov/percentage columns on `-chr`.
-2. Writes `<input>.masked.tsv`.
-3. Imputes only that haplotype column → `<input>.imputed.eval.tsv`.
+2. Writes `<input>.masked.tsv` (single-target) or per-target sidecars (cohort).
+3. Imputes the masked column(s) → `<input>.imputed.eval.tsv` or cohort output.
 4. Prints MSE and Pearson correlation on masked sites (stderr).
 
 ## Slurm

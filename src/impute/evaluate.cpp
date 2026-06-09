@@ -132,15 +132,19 @@ std::string cohort_work_dir(const std::string& output_path) {
     return (out.parent_path() / (out.stem().string() + ".evaluate.work")).string();
 }
 
+std::string target_label(const HaplotypeTarget& target) {
+    return target.hap.empty() ? target.sample_id : target.sample_id + "." + target.hap;
+}
+
 std::string target_sidecar_path(const std::string& work_dir, const HaplotypeTarget& target,
                                 const std::string& suffix) {
-    return work_dir + "/" + target.sample_id + "." + target.hap + suffix;
+    return work_dir + "/" + target_label(target) + suffix;
 }
 
 EvaluateCohortRow metrics_to_row(const HaplotypeTarget& target, const EvaluateOptions& opts,
                                  const EvaluateMetrics& metrics) {
     EvaluateCohortRow row;
-    row.sample = target.sample_id + "." + target.hap;
+    row.sample = target_label(target);
     row.window_size = opts.impute.window_bp;
     row.n_neighbors = opts.impute.min_neighbors;
     row.a = opts.impute.alpha;
@@ -162,7 +166,9 @@ void remove_if_exists(const std::string& path) {
 
 EvaluateMetrics run_evaluate(const std::string& input_path, const EvaluateOptions& opts) {
     if (opts.y_col.empty()) {
-        throw std::runtime_error("EvaluateOptions.y_col is required (e.g. CHI08A.hap1_counts)");
+        throw std::runtime_error(opts.impute.hap_mode
+                                     ? "EvaluateOptions.y_col is required (e.g. CHI08A.hap1_counts)"
+                                     : "EvaluateOptions.y_col is required (e.g. CHI08A.counts)");
     }
 
     const std::string masked_path =
@@ -178,7 +184,9 @@ EvaluateMetrics run_evaluate(const std::string& input_path, const EvaluateOption
     if (!std::getline(in, line)) throw std::runtime_error("Empty input: " + input_path);
 
     const std::vector<std::string> input_header = split_tab(line);
-    const HaplotypeTarget target = find_haplotype_target(input_header, opts.y_col);
+    const HaplotypeTarget target =
+        opts.impute.hap_mode ? find_haplotype_target(input_header, opts.y_col)
+                             : find_sample_target(input_header, opts.y_col);
     const std::vector<HaplotypeTarget> targets = {target};
 
     std::unordered_map<std::string, MaskedHoldout> holdouts;
@@ -311,9 +319,13 @@ std::vector<EvaluateCohortRow> run_evaluate_cohort(const std::string& input_path
     in.close();
 
     const std::vector<std::string> input_header = split_tab(line);
-    const std::vector<HaplotypeTarget> targets = discover_haplotype_targets(input_header);
+    const std::vector<HaplotypeTarget> targets =
+        opts.impute.hap_mode ? discover_haplotype_targets(input_header)
+                             : discover_sample_targets(input_header);
     if (targets.empty()) {
-        throw std::runtime_error("No {sample}.hap{1,2}_counts columns found in header");
+        throw std::runtime_error(opts.impute.hap_mode
+                                     ? "No {sample}.hap{1,2}_counts columns found in header"
+                                     : "No {sample}.counts columns found in header");
     }
 
     const std::string work_dir = cohort_work_dir(opts.output_path);
@@ -364,8 +376,9 @@ std::vector<EvaluateCohortRow> run_evaluate_cohort(const std::string& input_path
 
     write_evaluate_cohort_tsv(opts.output_path, rows);
 
-    std::cerr << "Evaluated " << rows.size() << " haplotype columns on " << opts.chromosome
-              << " → " << opts.output_path << '\n';
+    std::cerr << "Evaluated " << rows.size() << " "
+              << (opts.impute.hap_mode ? "haplotype" : "sample") << " columns on "
+              << opts.chromosome << " → " << opts.output_path << '\n';
 
     return rows;
 }

@@ -54,7 +54,7 @@ set_tests_properties(impute_output_columns_sample PROPERTIES DEPENDS impute_stre
 
 add_test(
     NAME evaluate_tiny
-    COMMAND evaluate -c S1.hap1_counts -m 0.2 -s 42 -w 200 -n 5
+    COMMAND evaluate --hap -c S1.hap1_counts -m 0.2 -s 42 -w 200 -n 5
             ${TEST_DATA_DIR}/tiny.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -64,11 +64,32 @@ set_tests_properties(evaluate_tiny PROPERTIES
 
 add_test(
     NAME evaluate_cohort_tiny
-    COMMAND evaluate -chr chr1 -m 0.2 -s 42 -w 200 -n 1 -j 2
+    COMMAND evaluate --hap -chr chr1 -m 0.2 -s 42 -w 200 -n 1 -j 2
             -o ${CMAKE_CURRENT_BINARY_DIR}/tiny.cohort.eval.tsv
             ${TEST_DATA_DIR}/tiny.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 set_tests_properties(evaluate_cohort_tiny PROPERTIES
     PASS_REGULAR_EXPRESSION "Evaluated 2 haplotype columns"
+)
+
+add_test(
+    NAME evaluate_tiny_sample
+    COMMAND evaluate -c S1.counts -m 0.2 -s 42 -w 200 -n 5
+            ${TEST_DATA_DIR}/tiny_sample.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+set_tests_properties(evaluate_tiny_sample PROPERTIES
+    PASS_REGULAR_EXPRESSION "S1\\.frac_imputed.*MSE="
+)
+
+add_test(
+    NAME evaluate_cohort_tiny_sample
+    COMMAND evaluate -chr chr1 -m 0.2 -s 42 -w 200 -n 1 -j 2
+            -o ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample.cohort.eval.tsv
+            ${TEST_DATA_DIR}/tiny_sample.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+set_tests_properties(evaluate_cohort_tiny_sample PROPERTIES
+    PASS_REGULAR_EXPRESSION "Evaluated 1 sample columns"
 )

@@ -110,6 +110,14 @@ HaplotypeTarget find_haplotype_target(const std::vector<std::string>& header,
     throw std::runtime_error("Counts column not found in header: " + y_col);
 }
 
+HaplotypeTarget find_sample_target(const std::vector<std::string>& header,
+                                   const std::string& y_col) {
+    for (const auto& t : discover_sample_targets(header)) {
+        if (t.y_col == y_col) return t;
+    }
+    throw std::runtime_error("Counts column not found in header: " + y_col);
+}
+
 OutputColumnPlan build_output_plan(const std::vector<std::string>& input_header,
                                    const std::vector<HaplotypeTarget>& targets) {
     OutputColumnPlan plan;

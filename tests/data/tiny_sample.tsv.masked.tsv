@@ -1,0 +1,9 @@
+chr	pos	S1.counts	S1.cov	S1.percentage
+chr1	100	2	5	50
+chr1	120	1	4	25
+chr1	140	3	6	50
+chr1	160	0	5	0
+chr1	200	2	5	40
+chr1	220	.	.	.
+chr1	240	2	5	40
+chr1	260	3	6	50
