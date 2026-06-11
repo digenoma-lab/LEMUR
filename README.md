@@ -65,20 +65,44 @@ Values come from bedMethyl `percent_modified` (0–100). `0` and `100` are writt
 
 ## Output format (imputed)
 
-After imputation (`--impute` on `merge_bedmethyl`, or `impute_methylation`), the merge columns are replaced by imputed fraction columns:
+After imputation (`--impute` on `merge_bedmethyl`, or `impute_methylation`), the merge columns are replaced by imputed columns. Two output modes are available:
 
-#### Haplotype mode (`--hap`)
+#### Fraction mode (default)
+
+Imputes methylation fraction with a local beta-binomial model.
+
+**Haplotype mode (`--hap`)**
 
 | Column | Description |
 |--------|-------------|
 | `{id}.hap1_frac_imputed` | Imputed methylation fraction for haplotype 1 (0–1) |
 | `{id}.hap2_frac_imputed` | Imputed methylation fraction for haplotype 2 (0–1) |
 
-#### Sample mode (default)
+**Sample mode (default)**
 
 | Column | Description |
 |--------|-------------|
 | `{id}.frac_imputed` | Imputed methylation fraction for the sample (0–1) |
+
+#### Counts/coverage mode (`--counts-cov`)
+
+Imputes methylated read count and coverage. Fraction is estimated with the same beta-binomial model; coverage is the mean of valid neighbors in the window; counts = round(fraction × coverage).
+
+**Haplotype mode (`--hap`)**
+
+| Column | Description |
+|--------|-------------|
+| `{id}.hap1_counts_imputed` | Imputed methylated read count (haplotype 1) |
+| `{id}.hap1_cov_imputed` | Imputed coverage (haplotype 1) |
+| `{id}.hap2_counts_imputed` | Imputed methylated read count (haplotype 2) |
+| `{id}.hap2_cov_imputed` | Imputed coverage (haplotype 2) |
+
+**Sample mode**
+
+| Column | Description |
+|--------|-------------|
+| `{id}.counts_imputed` | Imputed methylated read count |
+| `{id}.cov_imputed` | Imputed coverage |
 
 Example header and rows (from `tests/expected/tiny_hap1_imputed.tsv`):
 
@@ -94,7 +118,7 @@ chr1	140	0.5	0.4
 - **Beta-binomial model** with configurable prior (`-a`, `-b`; default uniform 1, 1).
 - **Local window** (`-w`, default 200 bp, same chromosome): uses neighboring sites with valid counts/coverage.
 - **Minimum neighbors** (`-n`, default 5): imputation runs only when enough valid neighbors exist in the window.
-- **Fallback**: if neighbors are insufficient but the site has coverage, writes the observed fraction (`counts/cov` or `percentage/100`); otherwise `.`.
+- **Fallback**: if neighbors are insufficient but the site has coverage, writes observed values (fraction, or counts/cov in `--counts-cov` mode); otherwise `.`.
 - **Fraction formatting**: `0` and `1` without decimals; other values up to 4 decimal places with trailing zeros stripped (e.g. `0.3333`, `0.425`).
 
 Imputation streams line by line; memory scales with window size × number of haplotype columns, not file size. Use `-j N` to process samples in parallel (OpenMP); each sample’s hap1/hap2 windows are independent.
@@ -134,6 +158,7 @@ merge_bedmethyl [-c N] [-s M] [--impute] [-w BP] [-a A] [-b B] [-n N] [-j N] \
 | `-c`, `--min-cov N` | Include haplotype fields only if valid coverage (column 9) **>** N | `3` |
 | `-s`, `--min-samples M` | Minimum samples with data per row | `N-1` (N = number of pairs) |
 | `--impute` | After merge, run beta-binomial imputation (see [Output format (imputed)](#output-format-imputed)) | off |
+| `--counts-cov` | With `--impute`: impute counts and coverage instead of fraction | off |
 | `-w` | Imputation genomic window (bp, same chromosome) | `200` |
 | `-a`, `-b` | Beta-binomial prior α and β | `1`, `1` |
 | `-n` | Minimum valid neighbors in window to impute | `5` |
@@ -174,15 +199,20 @@ impute_methylation [-w 200] [-a 1] [-b 1] [-n 5] [-j N] merged.tsv imputed.tsv
 
 # Haplotype mode: phased hp1/hp2 columns per sample
 impute_methylation --hap [-w 200] [-a 1] [-b 1] [-n 5] [-j N] merged.tsv imputed.tsv
+
+# Counts/coverage mode: impute methylated counts and coverage
+impute_methylation --counts-cov merged.tsv imputed_counts_cov.tsv
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
 | `--hap` | Input has `{id}.hap1_counts` / `{id}.hap2_counts` columns | off (`{id}.counts`) |
+| `--counts-cov` | Impute counts and coverage instead of fraction | off |
 | `-w`, `-a`, `-b`, `-n`, `-j` | Same as merge `--impute` options | `200`, `1`, `1`, `5`, `1` |
 
-Sample mode drops `{id}.counts`, `.cov`, `.percentage`; writes `{id}.frac_imputed`.
-Haplotype mode drops `{id}.hap{1,2}_counts`, `_cov`, `_percentage`; writes `{id}.hap{1,2}_frac_imputed`.
+Fraction mode (default) drops `{id}.counts`, `.cov`, `.percentage`; writes `{id}.frac_imputed`.
+Counts/cov mode (`--counts-cov`) writes `{id}.counts_imputed` and `{id}.cov_imputed`.
+Haplotype mode uses the same patterns with `{id}.hap{1,2}_*` prefixes.
 Other columns (e.g. `chr`, `pos`) are preserved.
 
 ### `evaluate`

@@ -45,7 +45,7 @@ std::vector<SampleImputeGroup> group_targets_by_sample(
 void process_sample_group(SampleImputeGroup& group, const std::vector<HaplotypeTarget>& targets,
                           const ImputeOptions& opts, const std::vector<std::string>& fields,
                           int pos, bool new_chromosome,
-                          std::vector<std::string>& imputed_values) {
+                          std::vector<ImputeResult>& imputed_values) {
     if (new_chromosome) {
         for (auto& window : group.windows) {
             window.clear();
@@ -109,11 +109,11 @@ void stream_beta_binomial_impute_targets(const std::string& input_path,
 
     const std::vector<std::string> input_header = split_tab(line);
 
-    const OutputColumnPlan plan = build_output_plan(input_header, targets);
+    const OutputColumnPlan plan = build_output_plan(input_header, targets, opts.mode);
     write_header_line(out, plan.header);
 
     std::vector<SampleImputeGroup> sample_groups = group_targets_by_sample(targets);
-    std::vector<std::string> imputed_values(targets.size());
+    std::vector<ImputeResult> imputed_values(targets.size());
     std::string current_chr;
 
 #ifdef _OPENMP
@@ -157,7 +157,7 @@ void stream_beta_binomial_impute_targets(const std::string& input_path,
             }
         }
 
-        std::unordered_map<std::string, std::string> imputed;
+        std::unordered_map<std::string, ImputeResult> imputed;
         imputed.reserve(targets.size());
         for (std::size_t t = 0; t < targets.size(); ++t) {
             imputed[targets[t].y_col] = imputed_values[t];
@@ -184,8 +184,8 @@ void stream_beta_binomial_impute_all(const std::string& input_path,
 
     const std::vector<std::string> input_header = split_tab(line);
     const std::vector<HaplotypeTarget> targets =
-        opts.hap_mode ? discover_haplotype_targets(input_header)
-                      : discover_sample_targets(input_header);
+        opts.hap_mode ? discover_haplotype_targets(input_header, opts.mode)
+                      : discover_sample_targets(input_header, opts.mode);
     if (targets.empty()) {
         throw std::runtime_error(opts.hap_mode
                                      ? "No {sample}.hap{1,2}_counts columns found in header"

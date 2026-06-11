@@ -14,6 +14,7 @@ struct ImputeOptions {
     int min_neighbors = 5;
     int num_threads = 1;  // 0 = all available cores (OpenMP)
     bool hap_mode = false;
+    ImputeMode mode = ImputeMode::Fraction;
 };
 
 std::string format_fraction(double value);

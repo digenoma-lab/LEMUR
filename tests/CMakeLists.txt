@@ -53,6 +53,23 @@ add_test(
 set_tests_properties(impute_output_columns_sample PROPERTIES DEPENDS impute_stream_tiny_sample)
 
 add_test(
+    NAME impute_stream_tiny_sample_counts_cov
+    COMMAND impute_methylation --counts-cov -a 1 -b 1
+            ${TEST_DATA_DIR}/tiny_sample.tsv
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample_counts_cov_imputed.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_test(
+    NAME impute_output_columns_sample_counts_cov
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample_counts_cov_imputed.tsv
+            ${CMAKE_CURRENT_SOURCE_DIR}/expected/tiny_sample_counts_cov_imputed.tsv
+)
+set_tests_properties(impute_output_columns_sample_counts_cov PROPERTIES
+    DEPENDS impute_stream_tiny_sample_counts_cov)
+
+add_test(
     NAME evaluate_tiny
     COMMAND evaluate --hap -c S1.hap1_counts -m 0.2 -s 42 -w 200 -n 5
             ${TEST_DATA_DIR}/tiny.tsv

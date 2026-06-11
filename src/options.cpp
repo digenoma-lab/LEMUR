@@ -18,7 +18,8 @@ void print_usage(const char* prog) {
         << "Streams all inputs line-by-line; loci are merged on chr + start.\n\n"
         << "Imputation (--impute):\n"
         << "  --impute             After merge, run beta-binomial imputation on output.\n"
-        << "                       Output TSV contains {id}.hap{1,2}_frac_imputed columns only.\n"
+        << "                       Default: {id}.hap{1,2}_frac_imputed columns.\n"
+        << "  --counts-cov         With --impute: output counts/cov imputed columns instead.\n"
         << "  -w BP                 Genomic window in bp (default 200)\n"
         << "  -a ALPHA              Beta-binomial prior alpha (default 1)\n"
         << "  -b BETA               Beta-binomial prior beta (default 1)\n"
@@ -48,6 +49,9 @@ int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
             ++argi;
         } else if (std::strcmp(argv[argi], "--impute") == 0) {
             out.options.impute = true;
+            ++argi;
+        } else if (std::strcmp(argv[argi], "--counts-cov") == 0) {
+            out.options.impute_options.mode = impute_methylation::ImputeMode::CountsCov;
             ++argi;
         } else if (std::strcmp(argv[argi], "-w") == 0) {
             if (argi + 1 >= argc) {
