@@ -23,8 +23,8 @@ set_tests_properties(merge_output_format PROPERTIES DEPENDS merge_two_samples)
 add_test(
     NAME merge_two_samples_sample_mode
     COMMAND merge_bedmethyl --sample -c 3 -s 2 ${CMAKE_CURRENT_BINARY_DIR}/test_out_sample.tsv
-            S1 ${TEST_DATA_DIR}/S1_hp1.bedmethyl ${TEST_DATA_DIR}/S1_hp2.bedmethyl
-            S2 ${TEST_DATA_DIR}/S2_hp1.bedmethyl ${TEST_DATA_DIR}/S2_hp2.bedmethyl
+            S1 ${TEST_DATA_DIR}/S1_combined.bedmethyl
+            S2 ${TEST_DATA_DIR}/S2_combined.bedmethyl
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
 set_tests_properties(merge_two_samples_sample_mode PROPERTIES

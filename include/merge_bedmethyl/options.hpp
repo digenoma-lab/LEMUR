@@ -13,10 +13,15 @@ struct SamplePair {
     std::string hp2_path;
 };
 
+struct SampleFile {
+    std::string label;
+    std::string bedmethyl_path;
+};
+
 struct Options {
     int min_coverage = 3;
     int min_samples = -1;  // unset: use N-1
-    bool sample_mode = false;  // false = haplotype columns (default); true = aggregate hp1+hp2
+    bool sample_mode = false;  // id + single bedmethyl per sample
     bool impute = false;
     impute_methylation::ImputeOptions impute_options;
 };
@@ -24,7 +29,8 @@ struct Options {
 struct ParsedArgs {
     Options options;
     std::string output_path;
-    std::vector<SamplePair> samples;
+    std::vector<SamplePair> haplotype_samples;
+    std::vector<SampleFile> sample_files;
     bool show_help = false;
 };
 

@@ -7,21 +7,25 @@ namespace merge_bedmethyl {
 
 void print_usage(const char* prog) {
     std::cerr
-        << "Usage: " << prog
-        << " [-c N] [-s M] <output.tsv> <label1> <hp1> <hp2> ...\n\n"
+        << "Usage:\n"
+        << "  " << prog
+        << " [-c N] [-s M] <output.tsv> <label1> <hp1> <hp2> [<label2> <hp3> <hp4> ...]\n"
+        << "  " << prog
+        << " --sample [-c N] [-s M] <output.tsv> <label1> <file1> [<label2> <file2> ...]\n\n"
         << "  -c, --min-cov N      Minimum coverage to report (column 10; default 3).\n"
         << "                       Values are included only when coverage > N.\n"
         << "  -s, --min-samples M  Minimum samples with data required per row.\n"
-        << "                       Default: N-1 (N = number of sample pairs).\n\n"
-        << "Writes chr, pos, then per sample:\n"
-        << "  default (haplotype): hap1_counts, hap2_counts, hap1_cov, hap2_cov,\n"
-        << "                       hap1_percentage, hap2_percentage\n"
-        << "  --sample:            counts, cov, percentage (hp1+hp2 aggregated)\n"
+        << "                       Default: N-1 (N = number of samples).\n\n"
+        << "Haplotype mode (default): <label> <hp1> <hp2> per sample.\n"
+        << "  Output: hap1_counts, hap2_counts, hap1_cov, hap2_cov,\n"
+        << "          hap1_percentage, hap2_percentage\n\n"
+        << "Sample mode (--sample): <label> <bedmethyl> per sample.\n"
+        << "  For unphased counts (e.g. modkit *_combined.bedmethyl).\n"
+        << "  Output: counts, cov, percentage\n"
         << "Missing fields are written as '.'.\n"
         << "Streams all inputs line-by-line; loci are merged on chr + start.\n\n"
         << "Imputation (--impute):\n"
         << "  --impute             After merge, run beta-binomial imputation on output.\n"
-        << "                       Default: {id}.hap{1,2}_frac_imputed columns.\n"
         << "  --counts-cov         With --impute: output counts/cov imputed columns instead.\n"
         << "  -w BP                 Genomic window in bp (default 200)\n"
         << "  -a ALPHA              Beta-binomial prior alpha (default 1)\n"
@@ -107,16 +111,30 @@ int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
     }
 
     const int positional = argc - argi;
+    if (out.options.sample_mode) {
+        if (positional < 3 || (positional - 1) % 2 != 0) {
+            print_usage(argv[0]);
+            return 1;
+        }
+
+        out.output_path = argv[argi];
+        out.sample_files.reserve((positional - 1) / 2);
+        for (int i = argi + 1; i < argc; i += 2) {
+            out.sample_files.push_back({argv[i], argv[i + 1]});
+        }
+        return 0;
+    }
+
     if (positional < 4 || (positional - 1) % 3 != 0) {
         print_usage(argv[0]);
         return 1;
     }
 
     out.output_path = argv[argi];
-    out.samples.reserve((positional - 1) / 3);
+    out.haplotype_samples.reserve((positional - 1) / 3);
 
     for (int i = argi + 1; i < argc; i += 3) {
-        out.samples.push_back({argv[i], argv[i + 1], argv[i + 2]});
+        out.haplotype_samples.push_back({argv[i], argv[i + 1], argv[i + 2]});
     }
 
     return 0;

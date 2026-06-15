@@ -42,13 +42,15 @@ Six columns per sample:
 
 #### Sample mode (`--sample`)
 
-Three columns per sample (hp1 + hp2 aggregated where coverage passes `-c`):
+Input: `<label> <bedmethyl>` per sample (e.g. modkit `*_combined.bedmethyl`).
+
+Three columns per sample:
 
 | Column | Description |
 |--------|-------------|
-| `{id}.counts` | Sum of methylated reads across haplotypes |
-| `{id}.cov` | Sum of coverage across haplotypes |
-| `{id}.percentage` | `100 × counts / cov` |
+| `{id}.counts` | Methylated read count |
+| `{id}.cov` | Coverage at the locus |
+| `{id}.percentage` | Methylation 0–100 |
 
 With two samples `S1` and `S2`, the header is:
 
@@ -167,11 +169,21 @@ merge_bedmethyl [-c N] [-s M] [--sample] [--impute] [-w BP] [-a A] [-b B] [-n N]
   <output.tsv> <label1> <hp1> <hp2> [<label2> <hp3> <hp4> ...]
 ```
 
+Haplotype input (default): three arguments per sample (`label`, `hp1`, `hp2`).
+
+Sample input (`--sample`): two arguments per sample (`label`, `bedmethyl`):
+
+```bash
+merge_bedmethyl --sample -c 3 -s 1 merged.tsv \
+  S1 results/modkit/S1.bed/S1_combined.bedmethyl \
+  S2 results/modkit/S2.bed/S2_combined.bedmethyl
+```
+
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-c`, `--min-cov N` | Include haplotype fields only if valid coverage (column 9) **>** N | `3` |
-| `-s`, `--min-samples M` | Minimum samples with data per row | `N-1` (N = number of pairs) |
-| `--sample` | Aggregate hp1+hp2 into `{id}.counts`, `.cov`, `.percentage` | off (haplotype columns) |
+| `-c`, `--min-cov N` | Include fields only if valid coverage (column 9) **>** N | `3` |
+| `-s`, `--min-samples M` | Minimum samples with data per row | `N-1` (N = number of samples) |
+| `--sample` | One bedmethyl file per sample (`id file` pairs); output sample columns | off (haplotype) |
 | `--impute` | After merge, run beta-binomial imputation (see [Output format (imputed)](#output-format-imputed)) | off |
 | `--counts-cov` | With `--impute`: impute counts and coverage instead of fraction | off |
 | `-w` | Imputation genomic window (bp, same chromosome) | `200` |
