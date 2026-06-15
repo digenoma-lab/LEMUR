@@ -127,6 +127,35 @@ std::string format_metric(double value) {
     return os.str();
 }
 
+double read_predicted_fraction(const std::vector<std::string>& out_header,
+                               const std::vector<std::string>& fields,
+                               const HaplotypeTarget& target, ImputeMode mode) {
+    if (mode == ImputeMode::CountsCov) {
+        const int y_idx = column_index(out_header, target.out_y_col);
+        const int n_idx = column_index(out_header, target.out_n_col);
+        if (y_idx < 0 || n_idx < 0) return kNaN;
+        if (static_cast<std::size_t>(y_idx) >= fields.size() ||
+            static_cast<std::size_t>(n_idx) >= fields.size()) {
+            return kNaN;
+        }
+        const double pred_y = parse_double_field(fields[static_cast<std::size_t>(y_idx)]);
+        const double pred_n = parse_double_field(fields[static_cast<std::size_t>(n_idx)]);
+        if (is_nan(pred_y) || is_nan(pred_n) || pred_n <= 0.0) return kNaN;
+        return pred_y / pred_n;
+    }
+
+    const int out_idx = column_index(out_header, target.out_col);
+    if (out_idx < 0 || static_cast<std::size_t>(out_idx) >= fields.size()) return kNaN;
+    return parse_fraction_field(fields[static_cast<std::size_t>(out_idx)]);
+}
+
+std::string scored_column_label(const HaplotypeTarget& target, ImputeMode mode) {
+    if (mode == ImputeMode::CountsCov) {
+        return target.out_y_col + "+" + target.out_n_col;
+    }
+    return target.out_col;
+}
+
 std::string cohort_work_dir(const std::string& output_path) {
     const std::filesystem::path out(output_path);
     return (out.parent_path() / (out.stem().string() + ".evaluate.work")).string();
@@ -185,8 +214,9 @@ EvaluateMetrics run_evaluate(const std::string& input_path, const EvaluateOption
 
     const std::vector<std::string> input_header = split_tab(line);
     const HaplotypeTarget target =
-        opts.impute.sample_mode ? find_sample_target(input_header, opts.y_col)
-                                : find_haplotype_target(input_header, opts.y_col);
+        opts.impute.sample_mode
+            ? find_sample_target(input_header, opts.y_col, opts.impute.mode)
+            : find_haplotype_target(input_header, opts.y_col, opts.impute.mode);
     const std::vector<HaplotypeTarget> targets = {target};
 
     std::unordered_map<std::string, MaskedHoldout> holdouts;
@@ -260,10 +290,6 @@ EvaluateMetrics run_evaluate(const std::string& input_path, const EvaluateOption
     if (!std::getline(imp_in, line)) throw std::runtime_error("Empty imputed file");
 
     const std::vector<std::string> out_header = split_tab(line);
-    const int out_idx = column_index(out_header, target.out_col);
-    if (out_idx < 0) {
-        throw std::runtime_error("Imputed column missing: " + target.out_col);
-    }
 
     MetricAccum acc;
 
@@ -278,9 +304,8 @@ EvaluateMetrics run_evaluate(const std::string& input_path, const EvaluateOption
         const auto it = holdouts.find(site_key(chr, pos));
         if (it == holdouts.end()) continue;
 
-        if (static_cast<std::size_t>(out_idx) >= fields.size()) continue;
-
-        const double pred = parse_fraction_field(fields[static_cast<std::size_t>(out_idx)]);
+        const double pred =
+            read_predicted_fraction(out_header, fields, target, opts.impute.mode);
         if (is_nan(pred)) continue;
 
         add_pair(acc, pred, it->second.true_frac);
@@ -296,7 +321,7 @@ EvaluateMetrics run_evaluate(const std::string& input_path, const EvaluateOption
                   << " mask_fraction=" << opts.mask_fraction << " seed=" << opts.seed
                   << " window=" << opts.impute.window_bp
                   << " min_neighbors=" << opts.impute.min_neighbors << "\n\n";
-        std::cerr << target.out_col << "\tmasked=" << metrics.n_masked
+        std::cerr << scored_column_label(target, opts.impute.mode) << "\tmasked=" << metrics.n_masked
                   << "\tscored=" << metrics.n_scored << "\tMSE=" << metrics.mse
                   << "\tPearson=" << metrics.pearson << '\n';
         std::cerr << "Imputed file: " << imputed_path << '\n';
@@ -320,8 +345,8 @@ std::vector<EvaluateCohortRow> run_evaluate_cohort(const std::string& input_path
 
     const std::vector<std::string> input_header = split_tab(line);
     const std::vector<HaplotypeTarget> targets =
-        opts.impute.sample_mode ? discover_sample_targets(input_header)
-                               : discover_haplotype_targets(input_header);
+        opts.impute.sample_mode ? discover_sample_targets(input_header, opts.impute.mode)
+                               : discover_haplotype_targets(input_header, opts.impute.mode);
     if (targets.empty()) {
         throw std::runtime_error(opts.impute.sample_mode
                                      ? "No {sample}.counts columns found in header"

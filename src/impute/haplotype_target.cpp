@@ -173,16 +173,16 @@ std::vector<HaplotypeTarget> discover_sample_targets(const std::vector<std::stri
 }
 
 HaplotypeTarget find_haplotype_target(const std::vector<std::string>& header,
-                                      const std::string& y_col) {
-    for (const auto& t : discover_haplotype_targets(header)) {
+                                      const std::string& y_col, ImputeMode mode) {
+    for (const auto& t : discover_haplotype_targets(header, mode)) {
         if (t.y_col == y_col) return t;
     }
     throw std::runtime_error("Counts column not found in header: " + y_col);
 }
 
 HaplotypeTarget find_sample_target(const std::vector<std::string>& header,
-                                   const std::string& y_col) {
-    for (const auto& t : discover_sample_targets(header)) {
+                                   const std::string& y_col, ImputeMode mode) {
+    for (const auto& t : discover_sample_targets(header, mode)) {
         if (t.y_col == y_col) return t;
     }
     throw std::runtime_error("Counts column not found in header: " + y_col);

@@ -20,6 +20,7 @@ void print_usage(const char* prog) {
         << "  -o   Cohort summary TSV (required without -c)\n"
         << "  -c   Counts column for single-target mode (e.g. CHI08A.counts or CHI08A.hap1_counts)\n"
         << "  --sample  Input has {id}.counts / {id}.cov columns (default: haplotype)\n"
+        << "  --counts-cov  Impute counts/cov and score implied fraction (default: fraction)\n"
         << "  -chr Chromosome to use (default chr1)\n"
         << "  -m   Mask fraction (default 0.2)\n"
         << "  -s   RNG seed for reproducible mask (default 42)\n"
@@ -77,6 +78,9 @@ bool parse_args(int argc, char* argv[], ParsedArgs& args) {
         } else if (std::strcmp(argv[argi], "--sample") == 0) {
             args.single.impute.sample_mode = true;
             args.cohort.impute.sample_mode = true;
+        } else if (std::strcmp(argv[argi], "--counts-cov") == 0) {
+            args.single.impute.mode = impute_methylation::ImputeMode::CountsCov;
+            args.cohort.impute.mode = impute_methylation::ImputeMode::CountsCov;
         } else if (std::strcmp(argv[argi], "-h") == 0 ||
                    std::strcmp(argv[argi], "--help") == 0) {
             print_usage(argv[0]);

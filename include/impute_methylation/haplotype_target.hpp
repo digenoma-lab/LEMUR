@@ -49,11 +49,13 @@ std::vector<HaplotypeTarget> discover_sample_targets(
 
 // y_col must be a {sample}.hap{1,2}_counts column name from the header.
 HaplotypeTarget find_haplotype_target(const std::vector<std::string>& header,
-                                      const std::string& y_col);
+                                      const std::string& y_col,
+                                      ImputeMode mode = ImputeMode::Fraction);
 
 // y_col must be a {sample}.counts column name from the header.
 HaplotypeTarget find_sample_target(const std::vector<std::string>& header,
-                                   const std::string& y_col);
+                                   const std::string& y_col,
+                                   ImputeMode mode = ImputeMode::Fraction);
 
 struct OutputColumnPlan {
     ImputeMode mode = ImputeMode::Fraction;
