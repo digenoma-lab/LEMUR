@@ -9,7 +9,7 @@ namespace {
 void print_usage(const char* prog) {
     std::cerr
         << "Usage: " << prog
-        << " [-w BP] [-a ALPHA] [-b BETA] [-n MIN_NEIGHBORS] [-j N] [--hap] [--counts-cov]\n"
+        << " [-w BP] [-a ALPHA] [-b BETA] [-n MIN_NEIGHBORS] [-j N] [--sample] [--counts-cov]\n"
         << " <input.tsv> <output.tsv>\n\n"
         << "Local beta-binomial imputation for all samples in the TSV (streaming).\n"
         << "  -w   Genomic window in bp (default 200)\n"
@@ -17,11 +17,11 @@ void print_usage(const char* prog) {
         << "  -b   Beta-binomial prior beta (default 1)\n"
         << "  -n   Minimum valid neighbors in window (default 5)\n"
         << "  -j   Parallel samples (default 1; 0 = all cores)\n"
-        << "  --hap  Input has phased haplotype columns per sample\n"
+        << "  --sample  Input has {id}.counts / {id}.cov columns (default: haplotype)\n"
         << "  --counts-cov  Impute counts and coverage instead of fraction (default: fraction)\n\n"
-        << "Fraction mode (default): writes {id}.frac_imputed (or {id}.hap{1,2}_frac_imputed).\n"
-        << "Counts/cov mode (--counts-cov): writes {id}.counts_imputed / {id}.cov_imputed\n"
-        << "(or {id}.hap{1,2}_counts_imputed / {id}.hap{1,2}_cov_imputed).\n"
+        << "Haplotype mode (default): writes {id}.hap{1,2}_frac_imputed.\n"
+        << "Sample mode (--sample): writes {id}.frac_imputed "
+        << "(or {id}.counts_imputed / {id}.cov_imputed with --counts-cov).\n"
         << "Drops source counts/cov/percentage columns (fallback: observed values).\n"
         << "Memory: O(num_targets * window sites), not file size.\n";
 }
@@ -40,8 +40,8 @@ bool parse_args(int argc, char* argv[], impute_methylation::ImputeOptions& opts,
             opts.min_neighbors = std::stoi(argv[++argi]);
         } else if (std::strcmp(argv[argi], "-j") == 0 && argi + 1 < argc) {
             opts.num_threads = std::stoi(argv[++argi]);
-        } else if (std::strcmp(argv[argi], "--hap") == 0) {
-            opts.hap_mode = true;
+        } else if (std::strcmp(argv[argi], "--sample") == 0) {
+            opts.sample_mode = true;
         } else if (std::strcmp(argv[argi], "--counts-cov") == 0) {
             opts.mode = impute_methylation::ImputeMode::CountsCov;
         } else if (std::strcmp(argv[argi], "-h") == 0 ||
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
     const char* impute_mode =
         opts.mode == impute_methylation::ImputeMode::CountsCov ? "counts/cov" : "fraction";
     std::cerr << "Wrote " << output << " ("
-              << (opts.hap_mode ? "haplotype" : "sample") << " mode, impute=" << impute_mode
+              << (opts.sample_mode ? "sample" : "haplotype") << " mode, impute=" << impute_mode
               << ", window=" << opts.window_bp << " bp, min_neighbors=" << opts.min_neighbors
               << ", streaming)\n";
     return 0;

@@ -87,14 +87,14 @@ After imputation (`--impute` on `merge_bedmethyl`, or `impute_methylation`), the
 
 Imputes methylation fraction with a local beta-binomial model.
 
-**Haplotype mode (`--hap`)**
+**Haplotype mode (default)**
 
 | Column | Description |
 |--------|-------------|
 | `{id}.hap1_frac_imputed` | Imputed methylation fraction for haplotype 1 (0–1) |
 | `{id}.hap2_frac_imputed` | Imputed methylation fraction for haplotype 2 (0–1) |
 
-**Sample mode (default)**
+**Sample mode (`--sample`)**
 
 | Column | Description |
 |--------|-------------|
@@ -104,7 +104,7 @@ Imputes methylation fraction with a local beta-binomial model.
 
 Imputes methylated read count and coverage. Fraction is estimated with the same beta-binomial model; coverage is the mean of valid neighbors in the window; counts = round(fraction × coverage).
 
-**Haplotype mode (`--hap`)**
+**Haplotype mode (default)**
 
 | Column | Description |
 |--------|-------------|
@@ -113,7 +113,7 @@ Imputes methylated read count and coverage. Fraction is estimated with the same 
 | `{id}.hap2_counts_imputed` | Imputed methylated read count (haplotype 2) |
 | `{id}.hap2_cov_imputed` | Imputed coverage (haplotype 2) |
 
-**Sample mode**
+**Sample mode (`--sample`)**
 
 | Column | Description |
 |--------|-------------|
@@ -221,46 +221,44 @@ Merge and impute in one step:
 Local **beta-binomial imputation** on an already-merged TSV.
 
 ```bash
-# Sample mode (default): one column set per sample
+# Haplotype mode (default): phased hp1/hp2 columns per sample
 impute_methylation [-w 200] [-a 1] [-b 1] [-n 5] [-j N] merged.tsv imputed.tsv
 
-# Haplotype mode: phased hp1/hp2 columns per sample
-impute_methylation --hap [-w 200] [-a 1] [-b 1] [-n 5] [-j N] merged.tsv imputed.tsv
+# Sample mode: {id}.counts / {id}.cov columns
+impute_methylation --sample [-w 200] [-a 1] [-b 1] [-n 5] [-j N] merged.tsv imputed.tsv
 
-# Counts/coverage mode: impute methylated counts and coverage
+# Counts/coverage output
 impute_methylation --counts-cov merged.tsv imputed_counts_cov.tsv
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--hap` | Input has `{id}.hap1_counts` / `{id}.hap2_counts` columns | off (`{id}.counts`) |
+| `--sample` | Input has `{id}.counts` / `{id}.cov` columns | off (haplotype) |
 | `--counts-cov` | Impute counts and coverage instead of fraction | off |
 | `-w`, `-a`, `-b`, `-n`, `-j` | Same as merge `--impute` options | `200`, `1`, `1`, `5`, `1` |
 
-Fraction mode (default) drops `{id}.counts`, `.cov`, `.percentage`; writes `{id}.frac_imputed`.
-Counts/cov mode (`--counts-cov`) writes `{id}.counts_imputed` and `{id}.cov_imputed`.
-Haplotype mode uses the same patterns with `{id}.hap{1,2}_*` prefixes.
-Other columns (e.g. `chr`, `pos`) are preserved.
+Haplotype mode (default) writes `{id}.hap{1,2}_frac_imputed` (or `_counts_imputed` / `_cov_imputed`).
+Sample mode (`--sample`) writes `{id}.frac_imputed` (or `.counts_imputed` / `.cov_imputed`).
 
 ### `evaluate`
 
 Hold-out benchmark with mask-and-impute scoring.
 
 ```bash
-# Single target, sample mode (default)
-evaluate -c CHI08A.counts [-chr chr1] [-m 0.2] [-s 42] [-w 200] [-a 1] [-b 1] [-n 5] merged.tsv
+# Single target, haplotype mode (default)
+evaluate -c CHI08A.hap1_counts [-chr chr1] [-m 0.2] [-s 42] [-w 200] [-a 1] [-b 1] [-n 5] merged.tsv
 
-# Single target, haplotype mode
-evaluate --hap -c CHI08A.hap1_counts [-chr chr1] ... merged.tsv
+# Single target, sample mode
+evaluate --sample -c CHI08A.counts [-chr chr1] ... merged.tsv
 
-# Cohort mode: evaluate all sample/haplotype columns in parallel
+# Cohort mode: evaluate all columns in parallel
 evaluate -o cohort.eval.tsv [-chr chr1] [-m 0.2] [-s 42] [-w 200] [-n 5] [-j N] merged.tsv
-evaluate --hap -o cohort.eval.tsv ... merged.tsv
+evaluate --sample -o cohort.eval.tsv ... merged.tsv
 ```
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--hap` | Input has `{id}.hap1_counts` / `{id}.hap2_counts` columns | off (`{id}.counts`) |
+| `--sample` | Input has `{id}.counts` / `{id}.cov` columns | off (haplotype) |
 | `-c` | Counts column for single-target mode | — |
 | `-o` | Cohort summary TSV (required without `-c`) | — |
 | `-chr` | Chromosome to mask, impute, and score | `chr1` |

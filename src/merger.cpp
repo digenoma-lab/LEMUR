@@ -17,7 +17,7 @@ bool run_impute(const ParsedArgs& args, const std::string& merge_output_path) {
 
     try {
         impute_methylation::ImputeOptions impute_opts = args.options.impute_options;
-        impute_opts.hap_mode = !args.options.sample_mode;
+        impute_opts.sample_mode = args.options.sample_mode;
         impute_methylation::stream_beta_binomial_impute_all(merge_output_path, args.output_path,
                                                             impute_opts);
     } catch (const std::exception& e) {

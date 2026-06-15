@@ -13,7 +13,7 @@ struct ImputeOptions {
     double beta = 1.0;
     int min_neighbors = 5;
     int num_threads = 1;  // 0 = all available cores (OpenMP)
-    bool hap_mode = false;
+    bool sample_mode = false;  // false = haplotype columns (default); true = {id}.counts/.cov
     ImputeMode mode = ImputeMode::Fraction;
 };
 

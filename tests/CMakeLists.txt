@@ -41,7 +41,7 @@ set_tests_properties(merge_output_format_sample_mode PROPERTIES
 
 add_test(
     NAME impute_stream_tiny
-    COMMAND impute_methylation --hap -a 1 -b 1
+    COMMAND impute_methylation -a 1 -b 1
             ${TEST_DATA_DIR}/tiny.tsv
             ${CMAKE_CURRENT_BINARY_DIR}/tiny_imputed.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -57,7 +57,7 @@ set_tests_properties(impute_output_columns PROPERTIES DEPENDS impute_stream_tiny
 
 add_test(
     NAME impute_stream_tiny_sample
-    COMMAND impute_methylation -a 1 -b 1
+    COMMAND impute_methylation --sample -a 1 -b 1
             ${TEST_DATA_DIR}/tiny_sample.tsv
             ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample_imputed.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -73,7 +73,7 @@ set_tests_properties(impute_output_columns_sample PROPERTIES DEPENDS impute_stre
 
 add_test(
     NAME impute_stream_tiny_sample_counts_cov
-    COMMAND impute_methylation --counts-cov -a 1 -b 1
+    COMMAND impute_methylation --sample --counts-cov -a 1 -b 1
             ${TEST_DATA_DIR}/tiny_sample.tsv
             ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample_counts_cov_imputed.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -90,7 +90,7 @@ set_tests_properties(impute_output_columns_sample_counts_cov PROPERTIES
 
 add_test(
     NAME evaluate_tiny
-    COMMAND evaluate --hap -c S1.hap1_counts -m 0.2 -s 42 -w 200 -n 5
+    COMMAND evaluate -c S1.hap1_counts -m 0.2 -s 42 -w 200 -n 5
             ${TEST_DATA_DIR}/tiny.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -100,7 +100,7 @@ set_tests_properties(evaluate_tiny PROPERTIES
 
 add_test(
     NAME evaluate_cohort_tiny
-    COMMAND evaluate --hap -chr chr1 -m 0.2 -s 42 -w 200 -n 1 -j 2
+    COMMAND evaluate -chr chr1 -m 0.2 -s 42 -w 200 -n 1 -j 2
             -o ${CMAKE_CURRENT_BINARY_DIR}/tiny.cohort.eval.tsv
             ${TEST_DATA_DIR}/tiny.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -111,7 +111,7 @@ set_tests_properties(evaluate_cohort_tiny PROPERTIES
 
 add_test(
     NAME evaluate_tiny_sample
-    COMMAND evaluate -c S1.counts -m 0.2 -s 42 -w 200 -n 5
+    COMMAND evaluate --sample -c S1.counts -m 0.2 -s 42 -w 200 -n 5
             ${TEST_DATA_DIR}/tiny_sample.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
 )
@@ -121,7 +121,7 @@ set_tests_properties(evaluate_tiny_sample PROPERTIES
 
 add_test(
     NAME evaluate_cohort_tiny_sample
-    COMMAND evaluate -chr chr1 -m 0.2 -s 42 -w 200 -n 1 -j 2
+    COMMAND evaluate --sample -chr chr1 -m 0.2 -s 42 -w 200 -n 1 -j 2
             -o ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample.cohort.eval.tsv
             ${TEST_DATA_DIR}/tiny_sample.tsv
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}

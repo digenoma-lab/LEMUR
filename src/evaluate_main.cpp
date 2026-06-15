@@ -19,7 +19,7 @@ void print_usage(const char* prog) {
         << "      Hold-out evaluation on one counts column.\n\n"
         << "  -o   Cohort summary TSV (required without -c)\n"
         << "  -c   Counts column for single-target mode (e.g. CHI08A.counts or CHI08A.hap1_counts)\n"
-        << "  --hap  Input has phased haplotype columns per sample\n"
+        << "  --sample  Input has {id}.counts / {id}.cov columns (default: haplotype)\n"
         << "  -chr Chromosome to use (default chr1)\n"
         << "  -m   Mask fraction (default 0.2)\n"
         << "  -s   RNG seed for reproducible mask (default 42)\n"
@@ -74,9 +74,9 @@ bool parse_args(int argc, char* argv[], ParsedArgs& args) {
             args.cohort.impute.min_neighbors = neighbors;
         } else if (std::strcmp(argv[argi], "-j") == 0 && argi + 1 < argc) {
             args.cohort.impute.num_threads = std::stoi(argv[++argi]);
-        } else if (std::strcmp(argv[argi], "--hap") == 0) {
-            args.single.impute.hap_mode = true;
-            args.cohort.impute.hap_mode = true;
+        } else if (std::strcmp(argv[argi], "--sample") == 0) {
+            args.single.impute.sample_mode = true;
+            args.cohort.impute.sample_mode = true;
         } else if (std::strcmp(argv[argi], "-h") == 0 ||
                    std::strcmp(argv[argi], "--help") == 0) {
             print_usage(argv[0]);
