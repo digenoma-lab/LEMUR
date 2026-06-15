@@ -34,8 +34,9 @@ bool any_valid(const std::vector<PairReaders>& pairs);
 void advance_readers_at_locus(std::vector<PairReaders>& pairs, const Locus& target);
 
 bool passes_coverage(const Reader& r, const Locus& target, int min_coverage);
-bool sample_has_information(const PairReaders& pair, const Locus& target, int min_coverage);
+bool sample_has_information(const PairReaders& pair, const Locus& target, int min_coverage,
+                            bool sample_mode = false);
 int count_samples_with_information(const std::vector<PairReaders>& pairs, const Locus& target,
-                                   int min_coverage);
+                                   int min_coverage, bool sample_mode = false);
 
 }  // namespace merge_bedmethyl

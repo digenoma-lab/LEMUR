@@ -10,4 +10,7 @@ namespace merge_bedmethyl {
 void append_sample_columns(std::ostream& out, const Reader& hp1, const Reader& hp2,
                            const Locus& target, int min_coverage);
 
+void append_sample_columns_aggregated(std::ostream& out, const Reader& hp1, const Reader& hp2,
+                                      const Locus& target, int min_coverage);
+
 }  // namespace merge_bedmethyl

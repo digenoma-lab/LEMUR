@@ -86,16 +86,28 @@ bool passes_coverage(const Reader& r, const Locus& target, int min_coverage) {
     return !r.eof() && r.current.locus == target && r.current.coverage > min_coverage;
 }
 
-bool sample_has_information(const PairReaders& pair, const Locus& target, int min_coverage) {
-    return passes_coverage(pair.hp1, target, min_coverage) ||
-           passes_coverage(pair.hp2, target, min_coverage);
+bool sample_has_information(const PairReaders& pair, const Locus& target, int min_coverage,
+                            bool sample_mode) {
+    if (!sample_mode) {
+        return passes_coverage(pair.hp1, target, min_coverage) ||
+               passes_coverage(pair.hp2, target, min_coverage);
+    }
+
+    long long cov = 0;
+    if (passes_coverage(pair.hp1, target, min_coverage)) {
+        cov += pair.hp1.current.coverage;
+    }
+    if (passes_coverage(pair.hp2, target, min_coverage)) {
+        cov += pair.hp2.current.coverage;
+    }
+    return cov > min_coverage;
 }
 
 int count_samples_with_information(const std::vector<PairReaders>& pairs, const Locus& target,
-                                   int min_coverage) {
+                                   int min_coverage, bool sample_mode) {
     int count = 0;
     for (const auto& pair : pairs) {
-        if (sample_has_information(pair, target, min_coverage)) ++count;
+        if (sample_has_information(pair, target, min_coverage, sample_mode)) ++count;
     }
     return count;
 }

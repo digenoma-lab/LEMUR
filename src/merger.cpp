@@ -29,9 +29,13 @@ int run_merge(const ParsedArgs& args) {
     out << "chr\tpos";
     for (const auto& pair : pairs) {
         const std::string& id = pair.label;
-        out << '\t' << id << ".hap1_counts" << '\t' << id << ".hap2_counts" << '\t' << id
-            << ".hap1_cov" << '\t' << id << ".hap2_cov" << '\t' << id << ".hap1_percentage"
-            << '\t' << id << ".hap2_percentage";
+        if (args.options.sample_mode) {
+            out << '\t' << id << ".counts" << '\t' << id << ".cov" << '\t' << id << ".percentage";
+        } else {
+            out << '\t' << id << ".hap1_counts" << '\t' << id << ".hap2_counts" << '\t' << id
+                << ".hap1_cov" << '\t' << id << ".hap2_cov" << '\t' << id << ".hap1_percentage"
+                << '\t' << id << ".hap2_percentage";
+        }
     }
     out << '\n';
 
@@ -56,8 +60,8 @@ int run_merge(const ParsedArgs& args) {
             skip_until(pair.hp2, target);
         }
 
-        const int samples_with_info =
-            count_samples_with_information(pairs, target, min_coverage);
+        const int samples_with_info = count_samples_with_information(
+            pairs, target, min_coverage, args.options.sample_mode);
         if (samples_with_info < min_samples_with_info) {
             advance_readers_at_locus(pairs, target);
             continue;
@@ -65,7 +69,11 @@ int run_merge(const ParsedArgs& args) {
 
         out << target.chr << '\t' << target.pos;
         for (auto& pair : pairs) {
-            append_sample_columns(out, pair.hp1, pair.hp2, target, min_coverage);
+            if (args.options.sample_mode) {
+                append_sample_columns_aggregated(out, pair.hp1, pair.hp2, target, min_coverage);
+            } else {
+                append_sample_columns(out, pair.hp1, pair.hp2, target, min_coverage);
+            }
         }
         out << '\n';
         ++rows;
@@ -82,7 +90,7 @@ int run_merge(const ParsedArgs& args) {
     if (args.options.impute) {
         try {
             impute_methylation::ImputeOptions impute_opts = args.options.impute_options;
-            impute_opts.hap_mode = true;
+            impute_opts.hap_mode = !args.options.sample_mode;
             impute_methylation::stream_beta_binomial_impute_all(
                 merge_output_path, args.output_path, impute_opts);
         } catch (const std::exception& e) {

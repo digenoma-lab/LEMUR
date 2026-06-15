@@ -25,7 +25,11 @@ Tab-separated values (TSV). The first two columns are shared across all samples:
 | `chr` | Chromosome |
 | `pos` | Start position (bedMethyl start, 0-based) |
 
-For each sample label `{id}` given on the command line, six columns are appended **in this order**:
+For each sample label `{id}` given on the command line, columns are appended **in this order**:
+
+#### Haplotype mode (default)
+
+Six columns per sample:
 
 | Column | Source (bedMethyl) | Description |
 |--------|-------------------|-------------|
@@ -35,6 +39,16 @@ For each sample label `{id}` given on the command line, six columns are appended
 | `{id}.hap2_cov` | valid coverage (haplotype 2) | Coverage at the locus |
 | `{id}.hap1_percentage` | `percent_modified` (haplotype 1) | Methylation 0–100 |
 | `{id}.hap2_percentage` | `percent_modified` (haplotype 2) | Methylation 0–100 |
+
+#### Sample mode (`--sample`)
+
+Three columns per sample (hp1 + hp2 aggregated where coverage passes `-c`):
+
+| Column | Description |
+|--------|-------------|
+| `{id}.counts` | Sum of methylated reads across haplotypes |
+| `{id}.cov` | Sum of coverage across haplotypes |
+| `{id}.percentage` | `100 × counts / cov` |
 
 With two samples `S1` and `S2`, the header is:
 
@@ -149,7 +163,7 @@ cmake --install build   # optional, installs to CMAKE_INSTALL_PREFIX/bin
 ### `merge_bedmethyl`
 
 ```bash
-merge_bedmethyl [-c N] [-s M] [--impute] [-w BP] [-a A] [-b B] [-n N] [-j N] \
+merge_bedmethyl [-c N] [-s M] [--sample] [--impute] [-w BP] [-a A] [-b B] [-n N] [-j N] \
   <output.tsv> <label1> <hp1> <hp2> [<label2> <hp3> <hp4> ...]
 ```
 
@@ -157,6 +171,7 @@ merge_bedmethyl [-c N] [-s M] [--impute] [-w BP] [-a A] [-b B] [-n N] [-j N] \
 |--------|-------------|---------|
 | `-c`, `--min-cov N` | Include haplotype fields only if valid coverage (column 9) **>** N | `3` |
 | `-s`, `--min-samples M` | Minimum samples with data per row | `N-1` (N = number of pairs) |
+| `--sample` | Aggregate hp1+hp2 into `{id}.counts`, `.cov`, `.percentage` | off (haplotype columns) |
 | `--impute` | After merge, run beta-binomial imputation (see [Output format (imputed)](#output-format-imputed)) | off |
 | `--counts-cov` | With `--impute`: impute counts and coverage instead of fraction | off |
 | `-w` | Imputation genomic window (bp, same chromosome) | `200` |

@@ -13,8 +13,11 @@ void print_usage(const char* prog) {
         << "                       Values are included only when coverage > N.\n"
         << "  -s, --min-samples M  Minimum samples with data required per row.\n"
         << "                       Default: N-1 (N = number of sample pairs).\n\n"
-        << "Writes chr, pos, then per sample: hap1_counts, hap2_counts, hap1_cov,\n"
-        << "hap2_cov, hap1_percentage, hap2_percentage ('.' if missing).\n"
+        << "Writes chr, pos, then per sample:\n"
+        << "  default (haplotype): hap1_counts, hap2_counts, hap1_cov, hap2_cov,\n"
+        << "                       hap1_percentage, hap2_percentage\n"
+        << "  --sample:            counts, cov, percentage (hp1+hp2 aggregated)\n"
+        << "Missing fields are written as '.'.\n"
         << "Streams all inputs line-by-line; loci are merged on chr + start.\n\n"
         << "Imputation (--impute):\n"
         << "  --impute             After merge, run beta-binomial imputation on output.\n"
@@ -46,6 +49,9 @@ int parse_arguments(int argc, char* argv[], ParsedArgs& out) {
                 return 1;
             }
             out.options.min_samples = std::stoi(argv[++argi]);
+            ++argi;
+        } else if (std::strcmp(argv[argi], "--sample") == 0) {
+            out.options.sample_mode = true;
             ++argi;
         } else if (std::strcmp(argv[argi], "--impute") == 0) {
             out.options.impute = true;

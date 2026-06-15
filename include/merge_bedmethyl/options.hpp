@@ -16,6 +16,7 @@ struct SamplePair {
 struct Options {
     int min_coverage = 3;
     int min_samples = -1;  // unset: use N-1
+    bool sample_mode = false;  // false = haplotype columns (default); true = aggregate hp1+hp2
     bool impute = false;
     impute_methylation::ImputeOptions impute_options;
 };

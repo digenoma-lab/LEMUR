@@ -55,4 +55,31 @@ void append_sample_columns(std::ostream& out, const Reader& hp1, const Reader& h
     append_percent(out, has2, hp2.current.meth_percent);
 }
 
+void append_sample_columns_aggregated(std::ostream& out, const Reader& hp1, const Reader& hp2,
+                                      const Locus& target, int min_coverage) {
+    const bool has1 = passes_coverage(hp1, target, min_coverage);
+    const bool has2 = passes_coverage(hp2, target, min_coverage);
+
+    if (!has1 && !has2) {
+        out << "\t.\t.\t.";
+        return;
+    }
+
+    long long counts = 0;
+    long long cov = 0;
+    if (has1) {
+        counts += hp1.current.n_modified;
+        cov += hp1.current.coverage;
+    }
+    if (has2) {
+        counts += hp2.current.n_modified;
+        cov += hp2.current.coverage;
+    }
+
+    out << '\t' << counts << '\t' << cov;
+    const double pct = (cov > 0) ? (100.0 * static_cast<double>(counts) / static_cast<double>(cov))
+                                 : 0.0;
+    append_percent(out, true, pct);
+}
+
 }  // namespace merge_bedmethyl
