@@ -149,3 +149,22 @@ add_test(
             ${CMAKE_CURRENT_SOURCE_DIR}/expected/dml_cohort.csv
 )
 set_tests_properties(dml_output_format PROPERTIES DEPENDS dml_tiny_cohort)
+
+add_test(
+    NAME call_dmr_tiny
+    COMMAND call_dmr --sample -j 1
+            ${TEST_DATA_DIR}/dml_call_dmr.csv
+            ${CMAKE_CURRENT_BINARY_DIR}/call_dmr.out.csv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+set_tests_properties(call_dmr_tiny PROPERTIES
+    PASS_REGULAR_EXPRESSION "DMRs found: 1"
+)
+
+add_test(
+    NAME call_dmr_output_format
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${CMAKE_CURRENT_BINARY_DIR}/call_dmr.out.csv
+            ${CMAKE_CURRENT_SOURCE_DIR}/expected/call_dmr.csv
+)
+set_tests_properties(call_dmr_output_format PROPERTIES DEPENDS call_dmr_tiny)

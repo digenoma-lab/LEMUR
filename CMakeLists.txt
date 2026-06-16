@@ -28,11 +28,15 @@ add_library(dml_lib
     src/dml/fdr.cpp
     src/dml/tsv_stream.cpp
     src/dml/util.cpp
+    src/dml/call_dmr.cpp
 )
 target_include_directories(dml_lib PUBLIC include)
 
 add_executable(dml src/dml_main.cpp)
 target_link_libraries(dml PRIVATE dml_lib)
+
+add_executable(call_dmr src/call_dmr_main.cpp)
+target_link_libraries(call_dmr PRIVATE dml_lib)
 
 find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
@@ -49,7 +53,7 @@ target_link_libraries(impute_methylation PRIVATE impute_methylation_lib)
 add_executable(evaluate src/evaluate_main.cpp)
 target_link_libraries(evaluate PRIVATE impute_methylation_lib)
 
-install(TARGETS merge_bedmethyl impute_methylation evaluate dml RUNTIME DESTINATION bin)
+install(TARGETS merge_bedmethyl impute_methylation evaluate dml call_dmr RUNTIME DESTINATION bin)
 
 enable_testing()
 add_subdirectory(tests)

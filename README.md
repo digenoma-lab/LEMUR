@@ -8,7 +8,7 @@
 
 Stream-merge [modkit](https://github.com/nanoporetech/modkit) **bedMethyl** files from phased haplotypes into a single TSV matrix, with optional local beta-binomial imputation. Built for cohorts where each sample has `*_hp1.bedmethyl` and `*_hp2.bedmethyl` pairs.
 
-Four command-line tools:
+Five command-line tools:
 
 | Tool | Purpose |
 |------|---------|
@@ -16,6 +16,7 @@ Four command-line tools:
 | `impute_methylation` | Impute missing methylation on an already-merged TSV |
 | `evaluate` | Hold-out benchmark for imputation (per-sample or per-haplotype) |
 | `dml` | DSS DML multiFactor: differential methylation per CpG |
+| `call_dmr` | DSS callDMR: merge significant DML sites into DMRs |
 
 ## Output format (merge)
 
@@ -155,7 +156,7 @@ cmake --build build
 make
 ```
 
-Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/evaluate`, `build/dml`
+Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/evaluate`, `build/dml`, `build/call_dmr`
 
 ```bash
 cmake --install build   # optional, installs to CMAKE_INSTALL_PREFIX/bin
@@ -305,6 +306,35 @@ Example:
 ./build/dml --sample -j 8 imputed.tsv samples_with_coverage.csv chr22.dml.csv
 ```
 
+### `call_dmr`
+
+Merge significant DML sites into **DMRs** (DSS `callDMR`). Streams the sorted DML CSV **one chromosome at a time** and processes chromosomes in parallel (`-j`).
+
+```bash
+call_dmr --sample [-j N] [--p-threshold P] [--dis-merge BP] [--minCG N] [--minlen BP] [--pct-sig F] \
+    <dml.csv> <dmrs.csv>
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--sample` | Sample-mode DML input from `dml --sample` (**required**) | off |
+| `-j` | OpenMP threads (`0` = all cores); parallel per chromosome | `1` |
+| `--p-threshold` | Significant CpG p-value cutoff | `1e-5` |
+| `--dis-merge` | Max gap (bp) between significant CpGs to merge | `100` |
+| `--minCG` | Minimum significant CpGs per DMR | `3` |
+| `--minlen` | Minimum genomic span (bp) | `50` |
+| `--pct-sig` | Min. fraction of significant CpGs in span | `0.5` |
+
+**Input:** sorted DML CSV from `dml --sample` (`chr`, `pos`, `beta_phenotype`, `se_phenotype`, `pvalue`, `delta_beta`, …).
+
+**Output CSV:** `chr`, `start`, `end`, `length`, `nCG`, `nCG.sig`, `pct.sig`, `areaStat`, `meanStat`, `meanDiff`, `direction`, `minP`, `meanP`.
+
+Example:
+
+```bash
+./build/call_dmr --sample -j 8 results/chr22.dml.csv chr22.dmrs.csv
+```
+
 ## Slurm
 
 ```bash
@@ -331,6 +361,7 @@ CTest runs:
 3. **impute_stream_tiny** / **impute_output_columns** — imputation on `tests/data/tiny.tsv` vs `tests/expected/tiny_hap1_imputed.tsv`.
 5. **evaluate_tiny** — hold-out evaluation metrics on the tiny fixture.
 6. **dml_tiny_cohort** / **dml_output_format** — DSS DML on `tests/data/dml_cohort.tsv`.
+7. **call_dmr_tiny** / **call_dmr_output_format** — DSS callDMR on `tests/data/dml_call_dmr.csv`.
 
 ### Continuous integration
 
@@ -351,6 +382,7 @@ LEMUR/
 │   ├── impute_main.cpp   # impute_methylation entry
 │   ├── evaluate_main.cpp # evaluate entry
 │   ├── dml_main.cpp      # dml entry
+│   ├── call_dmr_main.cpp # call_dmr entry
 │   ├── impute/           # beta-binomial imputation library
 │   └── dml/              # DSS DML library
 ├── tests/data/           # small bedMethyl and TSV fixtures

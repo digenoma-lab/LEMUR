@@ -1,0 +1,2 @@
+chr,start,end,length,nCG,nCG.sig,pct.sig,areaStat,meanStat,meanDiff,direction,minP,meanP
+chr1,1000,1050,51,8,6,0.75,30,5,0.3,hyper,1e-06,1e-06
