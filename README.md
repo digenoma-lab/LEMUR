@@ -110,17 +110,17 @@ Imputes methylated read count and coverage. Fraction is estimated with the same 
 
 | Column | Description |
 |--------|-------------|
-| `{id}.hap1_counts_imputed` | Imputed methylated read count (haplotype 1) |
-| `{id}.hap1_cov_imputed` | Imputed coverage (haplotype 1) |
-| `{id}.hap2_counts_imputed` | Imputed methylated read count (haplotype 2) |
-| `{id}.hap2_cov_imputed` | Imputed coverage (haplotype 2) |
+| `{id}.hap1_counts` | Imputed methylated read count (haplotype 1) |
+| `{id}.hap1_cov` | Imputed coverage (haplotype 1) |
+| `{id}.hap2_counts` | Imputed methylated read count (haplotype 2) |
+| `{id}.hap2_cov` | Imputed coverage (haplotype 2) |
 
 **Sample mode (`--sample`)**
 
 | Column | Description |
 |--------|-------------|
-| `{id}.counts_imputed` | Imputed methylated read count |
-| `{id}.cov_imputed` | Imputed coverage |
+| `{id}.counts` | Imputed methylated read count |
+| `{id}.cov` | Imputed coverage |
 
 Example header and rows (from `tests/expected/tiny_hap1_imputed.tsv`):
 
@@ -239,8 +239,8 @@ impute_methylation --counts-cov merged.tsv imputed_counts_cov.tsv
 | `--counts-cov` | Impute counts and coverage instead of fraction | off |
 | `-w`, `-a`, `-b`, `-n`, `-j` | Same as merge `--impute` options | `200`, `1`, `1`, `5`, `1` |
 
-Haplotype mode (default) writes `{id}.hap{1,2}_frac_imputed` (or `_counts_imputed` / `_cov_imputed`).
-Sample mode (`--sample`) writes `{id}.frac_imputed` (or `.counts_imputed` / `.cov_imputed`).
+Haplotype mode (default) writes `{id}.hap{1,2}_frac_imputed` (or `{id}.hap{1,2}_counts` / `_cov` with `--counts-cov`).
+Sample mode (`--sample`) writes `{id}.frac_imputed` (or `{id}.counts` / `{id}.cov` with `--counts-cov`).
 
 ### `evaluate`
 
@@ -286,13 +286,13 @@ dml --sample [-j N] [-b BATCH] [--case-label L] [--control-label L] \
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `--sample` | Input has `{id}.counts_imputed` / `{id}.cov_imputed` (**required**) | off |
+| `--sample` | Input has `{id}.counts` / `{id}.cov` (**required**) | off |
 | `-j` | OpenMP threads (`0` = all cores) | `1` |
 | `-b` | CpG sites per read/fit batch | `16384` |
 | `--case-label` | Phenotype label for cases | `Case` |
 | `--control-label` | Phenotype label for controls | `Control` |
 
-**Input TSV (`--sample`):** `chr`, `pos`, and per sample `{id}.counts_imputed`, `{id}.cov_imputed` (missing values: `.`). Same column layout as `impute_methylation --sample --counts-cov`.
+**Input TSV (`--sample`):** `chr`, `pos`, and per sample `{id}.counts`, `{id}.cov` (missing values: `.`). Same column layout as `impute_methylation --sample --counts-cov`.
 
 **Metadata CSV:** `sample_id`, `phenotype`, `AGE`, `BMI`, and for the default ancestry design also `SEX`, `AMR`, `COVERAGE_MEAN` (`EUR`/`AFR` may be present but are not used in the model).
 

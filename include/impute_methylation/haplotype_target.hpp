@@ -10,7 +10,7 @@ namespace impute_methylation {
 
 enum class ImputeMode {
     Fraction,   // output {id}.frac_imputed (default)
-    CountsCov,  // output {id}.counts_imputed and {id}.cov_imputed
+    CountsCov,  // output {id}.counts and {id}.cov (sample) or {id}.hap{1,2}_counts/_cov
 };
 
 struct ImputeOptions;

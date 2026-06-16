@@ -54,11 +54,11 @@ void set_fraction_outputs(HaplotypeTarget& t) {
 
 void set_counts_cov_outputs(HaplotypeTarget& t) {
     if (!t.hap.empty()) {
-        t.out_y_col = t.sample_id + "." + t.hap + "_counts_imputed";
-        t.out_n_col = t.sample_id + "." + t.hap + "_cov_imputed";
+        t.out_y_col = t.sample_id + "." + t.hap + "_counts";
+        t.out_n_col = t.sample_id + "." + t.hap + "_cov";
     } else {
-        t.out_y_col = t.sample_id + ".counts_imputed";
-        t.out_n_col = t.sample_id + ".cov_imputed";
+        t.out_y_col = t.sample_id + ".counts";
+        t.out_n_col = t.sample_id + ".cov";
     }
 }
 

@@ -114,12 +114,12 @@ CohortMeta load_metadata(const std::string& path, const std::vector<std::string>
         std::string count_col;
         std::string cov_col;
         if (sample_mode) {
-            count_col = s.sample_id + ".counts_imputed";
-            cov_col = s.sample_id + ".cov_imputed";
+            count_col = s.sample_id + ".counts";
+            cov_col = s.sample_id + ".cov";
         } else {
             throw std::runtime_error(
                 "dml haplotype mode is not supported; use --sample with "
-                "{id}.counts_imputed / {id}.cov_imputed columns");
+                "{id}.counts / {id}.cov columns");
         }
         s.count_idx = column_index(meth_header, count_col);
         s.cov_idx = column_index(meth_header, cov_col);

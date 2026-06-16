@@ -1,4 +1,4 @@
-chr	pos	S01.counts_imputed	S01.cov_imputed	S02.counts_imputed	S02.cov_imputed	S03.counts_imputed	S03.cov_imputed	S04.counts_imputed	S04.cov_imputed	S05.counts_imputed	S05.cov_imputed	S06.counts_imputed	S06.cov_imputed	S07.counts_imputed	S07.cov_imputed	S08.counts_imputed	S08.cov_imputed	S09.counts_imputed	S09.cov_imputed	S10.counts_imputed	S10.cov_imputed
+chr	pos	S01.counts	S01.cov	S02.counts	S02.cov	S03.counts	S03.cov	S04.counts	S04.cov	S05.counts	S05.cov	S06.counts	S06.cov	S07.counts	S07.cov	S08.counts	S08.cov	S09.counts	S09.cov	S10.counts	S10.cov
 chr1	1000	4	5	4	5	3	5	4	5	3	5	1	5	1	5	2	5	1	5	2	5
 chr1	1200	3	5	3	5	4	5	3	5	4	5	1	5	2	5	1	5	1	5	1	5
 chr1	1400	2	5	2	5	2	5	3	5	2	5	0	5	1	5	0	5	1	5	0	5

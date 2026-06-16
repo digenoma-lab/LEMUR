@@ -36,7 +36,7 @@ void print_usage(const char* prog) {
         << "DSS DML multiFactor: per-CpG differential methylation (arcsin + WLS).\n"
         << "  -j N           OpenMP threads (default 1; 0 = all cores)\n"
         << "  -b BATCH       Sites per read/fit batch (default 16384)\n"
-        << "  --sample       Input has {id}.counts_imputed / {id}.cov_imputed (required)\n"
+        << "  --sample       Input has {id}.counts / {id}.cov (required)\n"
         << "  --case-label   Case phenotype label (default Case)\n"
         << "  --control-label Control phenotype label (default Control)\n";
 }
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
     try {
         if (!opts.sample_mode) {
             throw std::runtime_error(
-                "dml requires --sample (input must have {id}.counts_imputed / {id}.cov_imputed "
+                "dml requires --sample (input must have {id}.counts / {id}.cov "
                 "columns from impute_methylation --sample --counts-cov)");
         }
 

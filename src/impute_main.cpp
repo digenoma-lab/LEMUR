@@ -21,7 +21,7 @@ void print_usage(const char* prog) {
         << "  --counts-cov  Impute counts and coverage instead of fraction (default: fraction)\n\n"
         << "Haplotype mode (default): writes {id}.hap{1,2}_frac_imputed.\n"
         << "Sample mode (--sample): writes {id}.frac_imputed "
-        << "(or {id}.counts_imputed / {id}.cov_imputed with --counts-cov).\n"
+        << "(or {id}.counts / {id}.cov with --counts-cov).\n"
         << "Drops source counts/cov/percentage columns (fallback: observed values).\n"
         << "Memory: O(num_targets * window sites), not file size.\n";
 }
