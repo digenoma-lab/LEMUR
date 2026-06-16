@@ -1,0 +1,6 @@
+chr	pos	S01.counts_imputed	S01.cov_imputed	S02.counts_imputed	S02.cov_imputed	S03.counts_imputed	S03.cov_imputed	S04.counts_imputed	S04.cov_imputed	S05.counts_imputed	S05.cov_imputed	S06.counts_imputed	S06.cov_imputed	S07.counts_imputed	S07.cov_imputed	S08.counts_imputed	S08.cov_imputed	S09.counts_imputed	S09.cov_imputed	S10.counts_imputed	S10.cov_imputed
+chr1	1000	4	5	4	5	3	5	4	5	3	5	1	5	1	5	2	5	1	5	2	5
+chr1	1200	3	5	3	5	4	5	3	5	4	5	1	5	2	5	1	5	1	5	1	5
+chr1	1400	2	5	2	5	2	5	3	5	2	5	0	5	1	5	0	5	1	5	0	5
+chr1	1600	5	10	4	10	5	10	4	10	5	10	2	10	3	10	2	10	2	10	3	10
+chr1	1800	1	5	2	5	1	5	2	5	1	5	3	5	4	5	3	5	4	5	3	5

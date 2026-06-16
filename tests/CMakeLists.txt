@@ -129,3 +129,23 @@ add_test(
 set_tests_properties(evaluate_cohort_tiny_sample PROPERTIES
     PASS_REGULAR_EXPRESSION "Evaluated 1 sample columns"
 )
+
+add_test(
+    NAME dml_tiny_cohort
+    COMMAND dml --sample -j 1
+            ${TEST_DATA_DIR}/dml_cohort.tsv
+            ${TEST_DATA_DIR}/dml_metadata.csv
+            ${CMAKE_CURRENT_BINARY_DIR}/dml_cohort.out.csv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+set_tests_properties(dml_tiny_cohort PROPERTIES
+    PASS_REGULAR_EXPRESSION "tested 5 CpGs"
+)
+
+add_test(
+    NAME dml_output_format
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${CMAKE_CURRENT_BINARY_DIR}/dml_cohort.out.csv
+            ${CMAKE_CURRENT_SOURCE_DIR}/expected/dml_cohort.csv
+)
+set_tests_properties(dml_output_format PROPERTIES DEPENDS dml_tiny_cohort)

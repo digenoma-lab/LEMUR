@@ -8,13 +8,14 @@
 
 Stream-merge [modkit](https://github.com/nanoporetech/modkit) **bedMethyl** files from phased haplotypes into a single TSV matrix, with optional local beta-binomial imputation. Built for cohorts where each sample has `*_hp1.bedmethyl` and `*_hp2.bedmethyl` pairs.
 
-Three command-line tools:
+Four command-line tools:
 
 | Tool | Purpose |
 |------|---------|
 | `merge_bedmethyl` | Merge haplotype bedMethyl pairs into one TSV |
 | `impute_methylation` | Impute missing methylation on an already-merged TSV |
 | `evaluate` | Hold-out benchmark for imputation (per-sample or per-haplotype) |
+| `dml` | DSS DML multiFactor: differential methylation per CpG |
 
 ## Output format (merge)
 
@@ -154,7 +155,7 @@ cmake --build build
 make
 ```
 
-Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/evaluate`
+Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/evaluate`, `build/dml`
 
 ```bash
 cmake --install build   # optional, installs to CMAKE_INSTALL_PREFIX/bin
@@ -273,6 +274,37 @@ Workflow:
 3. Imputes the masked column(s) → `<input>.imputed.eval.tsv` or cohort output.
 4. Prints MSE and Pearson correlation on masked sites (stderr).
 
+### `dml`
+
+Per-CpG **differential methylation** with the DSS `DMLfit.multiFactor` algorithm (arcsin transform + two-round WLS). Designed for imputed cohort TSVs from `impute_methylation --counts-cov --sample`.
+
+```bash
+dml --sample [-j N] [-b BATCH] [--case-label L] [--control-label L] \
+    <methylation.tsv> <metadata.csv> <output.csv>
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--sample` | Input has `{id}.counts_imputed` / `{id}.cov_imputed` (**required**) | off |
+| `-j` | OpenMP threads (`0` = all cores) | `1` |
+| `-b` | CpG sites per read/fit batch | `16384` |
+| `--case-label` | Phenotype label for cases | `Case` |
+| `--control-label` | Phenotype label for controls | `Control` |
+
+**Input TSV (`--sample`):** `chr`, `pos`, and per sample `{id}.counts_imputed`, `{id}.cov_imputed` (missing values: `.`). Same column layout as `impute_methylation --sample --counts-cov`.
+
+**Metadata CSV:** `sample_id`, `phenotype`, `AGE`, `BMI`, and for the default ancestry design also `SEX`, `AMR`, `COVERAGE_MEAN` (`EUR`/`AFR` may be present but are not used in the model).
+
+Default model: `~ phenotype + AGE + SEX + BMI + AMR + COVERAGE_MEAN`.
+
+**Output CSV** (genomic order): `chr`, `pos`, `beta_phenotype`, `se_phenotype`, `pvalue`, `phi`, `mean_case`, `mean_control`, `delta_beta`, `n_samples`, `FDR`, `significant`.
+
+Example:
+
+```bash
+./build/dml --sample -j 8 imputed.tsv samples_with_coverage.csv chr22.dml.csv
+```
+
 ## Slurm
 
 ```bash
@@ -297,7 +329,8 @@ CTest runs:
 1. **merge_two_samples** — merges fixture bedMethyl pairs and checks row count.
 2. **merge_output_format** — compares output to `tests/expected/merge_two_samples.tsv` (see [Output format (merge)](#output-format-merge)).
 3. **impute_stream_tiny** / **impute_output_columns** — imputation on `tests/data/tiny.tsv` vs `tests/expected/tiny_hap1_imputed.tsv`.
-4. **evaluate_tiny** — hold-out evaluation metrics on the tiny fixture.
+5. **evaluate_tiny** — hold-out evaluation metrics on the tiny fixture.
+6. **dml_tiny_cohort** / **dml_output_format** — DSS DML on `tests/data/dml_cohort.tsv`.
 
 ### Continuous integration
 
@@ -312,11 +345,14 @@ LEMUR/
 ├── imgs/logo.png
 ├── include/merge_bedmethyl/
 ├── include/impute_methylation/
+├── include/dml/
 ├── src/
 │   ├── main.cpp          # merge_bedmethyl entry
 │   ├── impute_main.cpp   # impute_methylation entry
 │   ├── evaluate_main.cpp # evaluate entry
-│   └── impute/           # beta-binomial imputation library
+│   ├── dml_main.cpp      # dml entry
+│   ├── impute/           # beta-binomial imputation library
+│   └── dml/              # DSS DML library
 ├── tests/data/           # small bedMethyl and TSV fixtures
 ├── tests/expected/       # golden TSV for output tests
 ├── .github/workflows/    # GitHub Actions CI
