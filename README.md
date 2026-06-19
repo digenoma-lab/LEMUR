@@ -308,7 +308,7 @@ Example:
 
 ### `call_dmr`
 
-Merge significant DML sites into **DMRs** (DSS `callDMR`). Streams the sorted DML CSV **one chromosome at a time** and processes chromosomes in parallel (`-j`).
+Merge significant DML sites into **DMRs** using the DSS `callDMR` / `findBumps` algorithm (`sep=5000`, consecutive significant runs, bump merging, `pct.sig` filter). Streams the sorted DML CSV **one chromosome at a time** and processes chromosomes in parallel (`-j`).
 
 ```bash
 call_dmr --sample [-j N] [--p-threshold P] [--dis-merge BP] [--minCG N] [--minlen BP] [--pct-sig F] \
@@ -320,10 +320,10 @@ call_dmr --sample [-j N] [--p-threshold P] [--dis-merge BP] [--minCG N] [--minle
 | `--sample` | Sample-mode DML input from `dml --sample` (**required**) | off |
 | `-j` | OpenMP threads (`0` = all cores); parallel per chromosome | `1` |
 | `--p-threshold` | Significant CpG p-value cutoff | `1e-5` |
-| `--dis-merge` | Max gap (bp) between significant CpGs to merge | `100` |
-| `--minCG` | Minimum significant CpGs per DMR | `3` |
-| `--minlen` | Minimum genomic span (bp) | `50` |
-| `--pct-sig` | Min. fraction of significant CpGs in span | `0.5` |
+| `--dis-merge` | Max gap (bp) between bump spans to merge; capped to `--minlen` when larger (DSS behaviour) | `100` |
+| `--minCG` | Minimum CpG sites per DMR (strict `> minCG` after calling) | `3` |
+| `--minlen` | Minimum genomic span (bp; strict `> minlen` after calling) | `50` |
+| `--pct-sig` | Min. fraction of significant CpGs in bump span (strict `> pct-sig`) | `0.5` |
 
 **Input:** sorted DML CSV from `dml --sample` (`chr`, `pos`, `beta_phenotype`, `se_phenotype`, `pvalue`, `delta_beta`, …).
 

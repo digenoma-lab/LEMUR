@@ -11,6 +11,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 #ifdef _OPENMP
 #include <omp.h>
@@ -77,14 +78,6 @@ struct DmlSite {
     double delta_beta = kNaN;
 };
 
-struct SigSite {
-    int pos = 0;
-    double pvalue = 0.0;
-    double stat = 0.0;
-    double delta_beta = 0.0;
-    int direction = 0;
-};
-
 struct ColumnMap {
     int chr = -1;
     int pos = -1;
@@ -92,6 +85,11 @@ struct ColumnMap {
     int se = -1;
     int pvalue = -1;
     int delta_beta = -1;
+};
+
+struct IndexRange {
+    int start = 0;
+    int end = 0;
 };
 
 ColumnMap parse_header(const std::string& header_line) {
@@ -207,103 +205,169 @@ std::vector<DmlSite> read_chromosome_sites(const std::string& path, const ChrSpa
     return sites;
 }
 
-int count_sites_in_range(const std::vector<DmlSite>& sites, int start, int end) {
-    const auto lo = std::lower_bound(
-        sites.begin(), sites.end(), start,
-        [](const DmlSite& s, int p) { return s.pos < p; });
-    const auto hi = std::upper_bound(
-        sites.begin(), sites.end(), end,
-        [](int p, const DmlSite& s) { return p < s.pos; });
-    return static_cast<int>(hi - lo);
+// DSS findRegion: split when abs(diff(pos)) > sep.
+std::vector<IndexRange> find_regions(const std::vector<DmlSite>& sites, int sep) {
+    std::vector<IndexRange> regions;
+    if (sites.empty()) return regions;
+
+    int region_start = 0;
+    for (std::size_t i = 1; i < sites.size(); ++i) {
+        const int gap = std::abs(sites[i].pos - sites[i - 1].pos);
+        if (gap > sep) {
+            regions.push_back(IndexRange{region_start, static_cast<int>(i) - 1});
+            region_start = static_cast<int>(i);
+        }
+    }
+    regions.push_back(IndexRange{region_start, static_cast<int>(sites.size()) - 1});
+    return regions;
 }
 
-void append_clusters(const std::vector<SigSite>& dir_sig, const std::vector<DmlSite>& sites,
-                     const std::string& chr, const CallDmrOptions& opts,
-                     std::vector<DmrRecord>& out) {
-    if (dir_sig.empty()) return;
+DmrRecord make_dmr_record(const std::string& chr, const std::vector<DmlSite>& sites,
+                            int global_start, int global_end, double p_threshold) {
+    DmrRecord dmr;
+    dmr.chr = chr;
+    dmr.start = sites[static_cast<std::size_t>(global_start)].pos;
+    dmr.end = sites[static_cast<std::size_t>(global_end)].pos;
+    dmr.length = dmr.end - dmr.start + 1;
+    dmr.n_cg = global_end - global_start + 1;
 
-    std::size_t i = 0;
-    while (i < dir_sig.size()) {
-        std::vector<const SigSite*> cluster;
-        cluster.push_back(&dir_sig[i]);
-        ++i;
-        while (i < dir_sig.size() && dir_sig[i].pos - cluster.back()->pos <= opts.dis_merge) {
-            cluster.push_back(&dir_sig[i]);
-            ++i;
+    double area_stat = 0.0;
+    double sum_stat = 0.0;
+    double sum_diff = 0.0;
+    double sum_p = 0.0;
+    double min_p = sites[static_cast<std::size_t>(global_start)].pvalue;
+    int n_sig = 0;
+
+    for (int i = global_start; i <= global_end; ++i) {
+        const auto& s = sites[static_cast<std::size_t>(i)];
+        area_stat += s.stat;
+        sum_stat += s.stat;
+        sum_diff += s.delta_beta;
+        sum_p += s.pvalue;
+        min_p = std::min(min_p, s.pvalue);
+        if (s.pvalue < p_threshold) {
+            ++n_sig;
         }
-
-        int start = cluster.front()->pos;
-        int end = start;
-        for (const SigSite* r : cluster) {
-            end = std::max(end, r->pos);
-        }
-
-        const int region_len = end - start + 1;
-        const int n_sig = static_cast<int>(cluster.size());
-        const int n_total = count_sites_in_range(sites, start, end);
-        if (n_total <= 0) continue;
-
-        const double prop_sig = static_cast<double>(n_sig) / static_cast<double>(n_total);
-        if (n_sig < opts.min_cg) continue;
-        if (region_len < opts.min_len) continue;
-        if (prop_sig < opts.pct_sig) continue;
-
-        double area_stat = 0.0;
-        double sum_stat = 0.0;
-        double sum_diff = 0.0;
-        double sum_p = 0.0;
-        double min_p = cluster.front()->pvalue;
-        for (const SigSite* r : cluster) {
-            area_stat += r->stat;
-            sum_stat += r->stat;
-            sum_diff += r->delta_beta;
-            sum_p += r->pvalue;
-            min_p = std::min(min_p, r->pvalue);
-        }
-        const double mean_stat = sum_stat / static_cast<double>(n_sig);
-
-        DmrRecord dmr;
-        dmr.chr = chr;
-        dmr.start = start;
-        dmr.end = end;
-        dmr.length = region_len;
-        dmr.n_cg = n_total;
-        dmr.n_cg_sig = n_sig;
-        dmr.pct_sig = prop_sig;
-        dmr.area_stat = area_stat;
-        dmr.mean_stat = mean_stat;
-        dmr.mean_diff = sum_diff / static_cast<double>(n_sig);
-        dmr.direction = mean_stat > 0.0 ? "hyper" : "hypo";
-        dmr.min_p = min_p;
-        dmr.mean_p = sum_p / static_cast<double>(n_sig);
-        out.push_back(std::move(dmr));
     }
+
+    const double denom = static_cast<double>(dmr.n_cg);
+    dmr.n_cg_sig = n_sig;
+    dmr.pct_sig = static_cast<double>(n_sig) / denom;
+    dmr.area_stat = area_stat;
+    dmr.mean_stat = sum_stat / denom;
+    dmr.mean_diff = sum_diff / denom;
+    dmr.direction = dmr.mean_stat > 0.0 ? "hyper" : "hypo";
+    dmr.min_p = min_p;
+    dmr.mean_p = sum_p / denom;
+    return dmr;
+}
+
+// Port of DSS findBumps() as used by callDMR(delta=0).
+std::vector<DmrRecord> find_bumps(const std::string& chr, const std::vector<DmlSite>& sites,
+                                  const CallDmrOptions& opts, int dis_merge) {
+    std::vector<DmrRecord> out;
+    if (sites.empty()) return out;
+
+    std::vector<bool> flag(sites.size(), false);
+    bool any_sig = false;
+    for (std::size_t i = 0; i < sites.size(); ++i) {
+        flag[i] = sites[i].pvalue < opts.p_threshold;
+        any_sig = any_sig || flag[i];
+    }
+    if (!any_sig) return out;
+
+    const auto regions = find_regions(sites, opts.region_sep);
+    for (const auto& region : regions) {
+        const int region_len = region.end - region.start + 1;
+        if (region_len <= opts.min_cg) continue;
+
+        std::vector<int> startidx;
+        std::vector<int> endidx;
+
+        if (flag[static_cast<std::size_t>(region.start)]) {
+            startidx.push_back(region.start);
+        }
+        for (int i = region.start + 1; i <= region.end; ++i) {
+            if (!flag[static_cast<std::size_t>(i - 1)] && flag[static_cast<std::size_t>(i)]) {
+                startidx.push_back(i);
+            }
+        }
+
+        if (startidx.empty()) continue;
+
+        for (int i = region.start; i < region.end; ++i) {
+            if (flag[static_cast<std::size_t>(i)] && !flag[static_cast<std::size_t>(i + 1)]) {
+                endidx.push_back(i);
+            }
+        }
+        if (flag[static_cast<std::size_t>(region.end)]) {
+            endidx.push_back(region.end);
+        }
+
+        if (startidx.size() != endidx.size()) continue;
+
+        const int nbump = static_cast<int>(startidx.size());
+        if (nbump > 1) {
+            std::vector<int> merged_start;
+            std::vector<int> merged_end;
+            merged_start.push_back(startidx[0]);
+            merged_end.push_back(endidx[0]);
+
+            for (int b = 1; b < nbump; ++b) {
+                const int prev_end_pos = sites[static_cast<std::size_t>(merged_end.back())].pos;
+                const int next_start_pos = sites[static_cast<std::size_t>(startidx[b])].pos;
+                if (next_start_pos > prev_end_pos + dis_merge) {
+                    merged_start.push_back(startidx[b]);
+                    merged_end.push_back(endidx[b]);
+                } else {
+                    merged_end.back() = endidx[b];
+                }
+            }
+            startidx = std::move(merged_start);
+            endidx = std::move(merged_end);
+        }
+
+        std::vector<int> good_start;
+        std::vector<int> good_end;
+        for (std::size_t b = 0; b < startidx.size(); ++b) {
+            int n_in_bump = 0;
+            int n_sig_in_bump = 0;
+            for (int i = startidx[b]; i <= endidx[b]; ++i) {
+                ++n_in_bump;
+                if (flag[static_cast<std::size_t>(i)]) {
+                    ++n_sig_in_bump;
+                }
+            }
+            const double prop_sig = static_cast<double>(n_sig_in_bump) / static_cast<double>(n_in_bump);
+            if (prop_sig > opts.pct_sig) {
+                good_start.push_back(startidx[b]);
+                good_end.push_back(endidx[b]);
+            }
+        }
+
+        for (std::size_t b = 0; b < good_start.size(); ++b) {
+            const int g_start = good_start[b];
+            const int g_end = good_end[b];
+            const int length = sites[static_cast<std::size_t>(g_end)].pos -
+                               sites[static_cast<std::size_t>(g_start)].pos + 1;
+            const int n_cg = g_end - g_start + 1;
+            if (length <= opts.min_len || n_cg <= opts.min_cg) continue;
+
+            out.push_back(make_dmr_record(chr, sites, g_start, g_end, opts.p_threshold));
+        }
+    }
+
+    return out;
 }
 
 std::vector<DmrRecord> process_chromosome(const std::string& chr,
                                           const std::vector<DmlSite>& sites,
                                           const CallDmrOptions& opts) {
-    std::vector<DmrRecord> out;
-    if (sites.empty()) return out;
-
-    std::vector<SigSite> hyper;
-    std::vector<SigSite> hypo;
-    hyper.reserve(sites.size() / 100 + 4);
-    hypo.reserve(sites.size() / 100 + 4);
-
-    for (const auto& s : sites) {
-        if (s.pvalue >= opts.p_threshold) continue;
-        SigSite row{s.pos, s.pvalue, s.stat, s.delta_beta, s.stat >= 0.0 ? 1 : -1};
-        if (row.direction > 0) {
-            hyper.push_back(row);
-        } else {
-            hypo.push_back(row);
-        }
+    int dis_merge = opts.dis_merge;
+    if (dis_merge > opts.min_len) {
+        dis_merge = opts.min_len;
     }
-
-    append_clusters(hyper, sites, chr, opts, out);
-    append_clusters(hypo, sites, chr, opts, out);
-    return out;
+    return find_bumps(chr, sites, opts, dis_merge);
 }
 
 }  // namespace

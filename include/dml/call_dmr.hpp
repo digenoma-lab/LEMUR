@@ -7,11 +7,12 @@ namespace dml {
 
 struct CallDmrOptions {
     double p_threshold = 1e-5;
-    int dis_merge = 100;
+    int dis_merge = 100;   // capped to min_len when dis_merge > min_len (DSS callDMR)
     int min_cg = 3;
     int min_len = 50;
     double pct_sig = 0.5;
-    int num_threads = 1;  // 0 = all cores (OpenMP)
+    int region_sep = 5000;  // DSS findBumps sep passed by callDMR
+    int num_threads = 1;    // 0 = all cores (OpenMP)
     bool sample_mode = false;
 };
 
