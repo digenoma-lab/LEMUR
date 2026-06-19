@@ -95,7 +95,7 @@ int run_merge_sample(const ParsedArgs& args) {
     out.close();
 
     std::cerr << "Wrote " << rows << " rows to " << merge_output_path
-              << " (sample mode, min coverage > " << min_coverage << ", >= "
+              << " (sample mode, min coverage >= " << min_coverage << ", >= "
               << min_samples_with_info << "/" << num_samples << " samples per row)\n";
 
     if (!run_impute(args, merge_output_path)) return 1;
@@ -174,7 +174,7 @@ int run_merge(const ParsedArgs& args) {
     out.close();
 
     std::cerr << "Wrote " << rows << " rows to " << merge_output_path
-              << " (min coverage > " << min_coverage << ", >= " << min_samples_with_info << "/"
+              << " (min coverage >= " << min_coverage << ", >= " << min_samples_with_info << "/"
               << num_samples << " samples per row)\n";
 
     if (!run_impute(args, merge_output_path)) return 1;

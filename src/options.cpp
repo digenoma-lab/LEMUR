@@ -13,7 +13,7 @@ void print_usage(const char* prog) {
         << "  " << prog
         << " --sample [-c N] [-s M] <output.tsv> <label1> <file1> [<label2> <file2> ...]\n\n"
         << "  -c, --min-cov N      Minimum coverage to report (column 10; default 3).\n"
-        << "                       Values are included only when coverage > N.\n"
+        << "                       Values are included only when coverage >= N.\n"
         << "  -s, --min-samples M  Minimum samples with data required per row.\n"
         << "                       Default: N-1 (N = number of samples).\n\n"
         << "Haplotype mode (default): <label> <hp1> <hp2> per sample.\n"

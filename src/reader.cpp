@@ -114,7 +114,7 @@ void advance_readers_at_locus(std::vector<SingleSampleReaders>& samples, const L
 }
 
 bool passes_coverage(const Reader& r, const Locus& target, int min_coverage) {
-    return !r.eof() && r.current.locus == target && r.current.coverage > min_coverage;
+    return !r.eof() && r.current.locus == target && r.current.coverage >= min_coverage;
 }
 
 bool sample_has_information(const PairReaders& pair, const Locus& target, int min_coverage) {

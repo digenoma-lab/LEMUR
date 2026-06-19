@@ -73,7 +73,7 @@ Meaning at `chr1:100`:
 
 ### Missing values
 
-If a haplotype has no row at the locus, or its coverage does not pass `-c` (coverage must be **>** N), all six fields for that haplotype are written as `.` (e.g. `.\t.\t.\t.\t.\t.` for both haplotypes of one sample).
+If a haplotype has no row at the locus, or its coverage does not pass `-c` (coverage must be **>=** N), all six fields for that haplotype are written as `.` (e.g. `.\t.\t.\t.\t.\t.` for both haplotypes of one sample).
 
 A row is emitted only when at least `-s` samples have data at that locus (at least one haplotype per sample above the coverage threshold).
 
