@@ -264,6 +264,11 @@ void write_projected_row_all(std::ostream& out, const std::vector<std::string>& 
 
 ImputeResult impute_from_window(const std::deque<WindowSite>& window, const ImputeOptions& opts,
                                 double current_y, double current_n, double current_pct) {
+    // Preserve observed sites. Only impute when current site is missing.
+    if (!is_nan(current_n) && current_n > 0.0 && !is_nan(current_y)) {
+        return observed_values(current_y, current_n, current_pct, opts.mode);
+    }
+
     double y_sum = 0.0;
     double n_sum = 0.0;
     std::size_t valid = 0;
