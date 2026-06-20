@@ -102,7 +102,7 @@ void write_results_csv(const std::string& path, std::vector<SiteResult>& results
         auto w = [&](double v) {
             if (std::isfinite(v)) out << v;
         };
-        out << r.chr << ',' << r.pos << ',';
+        out << r.chr << ',' << (r.pos + kDssOutputCoordOffset) << ',';
         w(r.beta_phenotype);
         out << ',';
         w(r.se_phenotype);
