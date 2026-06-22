@@ -8,7 +8,7 @@
 
 Stream-merge [modkit](https://github.com/nanoporetech/modkit) **bedMethyl** files from phased haplotypes into a single TSV matrix, with optional local beta-binomial imputation. Built for cohorts where each sample has `*_hp1.bedmethyl` and `*_hp2.bedmethyl` pairs.
 
-Five command-line tools:
+Seven command-line tools:
 
 | Tool | Purpose |
 |------|---------|
@@ -17,6 +17,8 @@ Five command-line tools:
 | `evaluate` | Hold-out benchmark for imputation (per-sample or per-haplotype) |
 | `dml` | DSS DML multiFactor: differential methylation per CpG |
 | `call_dmr` | DSS callDMR: merge significant DML sites into DMRs |
+| `tracts` | Extract ancestry-specific methylation counts/cov from MSP + haplotype TSV |
+| `la-dml` | Local-ancestry-aware DSS association per CpG and ancestry |
 
 ## Output format (merge)
 
@@ -156,7 +158,7 @@ cmake --build build
 make
 ```
 
-Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/evaluate`, `build/dml`, `build/call_dmr`
+Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/evaluate`, `build/dml`, `build/call_dmr`, `build/tracts`, `build/la-dml`
 
 ```bash
 cmake --install build   # optional, installs to CMAKE_INSTALL_PREFIX/bin
@@ -304,6 +306,59 @@ Example:
 
 ```bash
 ./build/dml --sample -j 8 imputed.tsv samples_with_coverage.csv chr22.dml.csv
+```
+
+### `tracts`
+
+Extract **ancestry-specific methylation tracts** from phased haplotype matrices and MSP local-ancestry calls (Tractor-style, adapted for methylation). For each ancestral population `i`, writes:
+
+- `<prefix>.anc<i>.counts.txt`
+- `<prefix>.anc<i>.cov.txt`
+- `<prefix>.anc<i>.hapcount.txt`
+
+```bash
+tracts --methylation chr1.tsv --msp lai_chr1.msp.tsv \
+  --num-ancs 3 --output-dir out/ --output-prefix chr1
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--methylation` | Haplotype methylation TSV (`*.hap1_counts` / `*.hap1_cov` columns) | required |
+| `--msp` | RFMix/G-Nomix MSP file | required |
+| `--num-ancs` | Number of ancestral populations | required |
+| `--output-dir` | Output directory | methylation file directory |
+| `--output-prefix` | Filename prefix for outputs | methylation basename |
+
+### `la-dml`
+
+Per-CpG **local-ancestry-aware association** using the DSS beta-binomial model (same core as `dml`), fitted separately for each ancestry on `tracts` output:
+
+```
+arcsin((k+0.1)/(n+0.2)) ~ phenotype + hapcount + AGE + SEX + BMI + AMR + COVERAGE_MEAN
+```
+
+```bash
+la-dml --tract-prefix out/chr1 --metadata samples.csv \
+  --num-ancs 3 --output chr1.la_dml.tsv -j 8
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--tract-prefix` | Prefix of `tracts` output (`*.anc<i>.counts.txt`, etc.) | required |
+| `--metadata` | Sample metadata CSV (`sample_id`, `phenotype`, covariates) | required |
+| `--num-ancs` | Number of ancestral populations | required |
+| `--output` | Summary statistics TSV | required |
+| `--case-label` / `--control-label` | Phenotype labels | `Case` / `Control` |
+| `-j` | OpenMP threads | `1` |
+| `-b` | CpG sites per batch | `8192` |
+
+**Output TSV:** `chr`, `pos`, and per ancestry `N_anc*`, `mf_anc*`, `LAprop_anc*`, `phi_anc*`, `beta_pheno_anc*`, `se_pheno_anc*`, `pval_pheno_anc*`, `tval_pheno_anc*`, `beta_LA_anc*`, `se_LA_anc*`, `pval_LA_anc*`, `tval_LA_anc*`.
+
+Example workflow:
+
+```bash
+./build/tracts --methylation chr1.tsv --msp lai_chr1.msp.tsv --num-ancs 3 --output-dir out/ --output-prefix chr1
+./build/la-dml --tract-prefix out/chr1 --metadata samples.csv --num-ancs 3 --output chr1.la_dml.tsv -j 8
 ```
 
 ### `call_dmr`

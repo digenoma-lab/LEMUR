@@ -53,7 +53,14 @@ target_link_libraries(impute_methylation PRIVATE impute_methylation_lib)
 add_executable(evaluate src/evaluate_main.cpp)
 target_link_libraries(evaluate PRIVATE impute_methylation_lib)
 
-install(TARGETS merge_bedmethyl impute_methylation evaluate dml call_dmr RUNTIME DESTINATION bin)
+add_executable(tracts src/tracts_main.cpp)
+
+add_executable(la-dml src/la_dml_main.cpp)
+if(OpenMP_CXX_FOUND)
+    target_link_libraries(la-dml PRIVATE OpenMP::OpenMP_CXX)
+endif()
+
+install(TARGETS merge_bedmethyl impute_methylation evaluate dml call_dmr tracts la-dml RUNTIME DESTINATION bin)
 
 enable_testing()
 add_subdirectory(tests)
