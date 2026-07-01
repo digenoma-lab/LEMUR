@@ -89,6 +89,55 @@ set_tests_properties(impute_output_columns_sample_counts_cov PROPERTIES
     DEPENDS impute_stream_tiny_sample_counts_cov)
 
 add_test(
+    NAME smooth_stream_tiny
+    COMMAND smooth_methylation -a 1 -b 1
+            ${TEST_DATA_DIR}/tiny.tsv
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_smoothed.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_test(
+    NAME smooth_output_columns
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_smoothed.tsv
+            ${CMAKE_CURRENT_SOURCE_DIR}/expected/tiny_hap1_smoothed.tsv
+)
+set_tests_properties(smooth_output_columns PROPERTIES DEPENDS smooth_stream_tiny)
+
+add_test(
+    NAME smooth_stream_tiny_sample
+    COMMAND smooth_methylation --sample -a 1 -b 1
+            ${TEST_DATA_DIR}/tiny_sample.tsv
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample_smoothed.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_test(
+    NAME smooth_output_columns_sample
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample_smoothed.tsv
+            ${CMAKE_CURRENT_SOURCE_DIR}/expected/tiny_sample_smoothed.tsv
+)
+set_tests_properties(smooth_output_columns_sample PROPERTIES DEPENDS smooth_stream_tiny_sample)
+
+add_test(
+    NAME smooth_stream_tiny_sample_counts_cov
+    COMMAND smooth_methylation --sample --counts-cov -a 1 -b 1
+            ${TEST_DATA_DIR}/tiny_sample.tsv
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample_counts_cov_smoothed.tsv
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+add_test(
+    NAME smooth_output_columns_sample_counts_cov
+    COMMAND ${CMAKE_COMMAND} -E compare_files
+            ${CMAKE_CURRENT_BINARY_DIR}/tiny_sample_counts_cov_smoothed.tsv
+            ${CMAKE_CURRENT_SOURCE_DIR}/expected/tiny_sample_counts_cov_smoothed.tsv
+)
+set_tests_properties(smooth_output_columns_sample_counts_cov PROPERTIES
+    DEPENDS smooth_stream_tiny_sample_counts_cov)
+
+add_test(
     NAME evaluate_tiny
     COMMAND evaluate -c S1.hap1_counts -m 0.2 -s 42 -w 200 -n 5
             ${TEST_DATA_DIR}/tiny.tsv

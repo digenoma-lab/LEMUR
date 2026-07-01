@@ -9,8 +9,13 @@
 namespace impute_methylation {
 
 enum class ImputeMode {
-    Fraction,   // output {id}.frac_imputed (default)
+    Fraction,   // output {id}.frac_imputed or {id}.frac_smoothed (default)
     CountsCov,  // output {id}.counts and {id}.cov (sample) or {id}.hap{1,2}_counts/_cov
+};
+
+enum class ProcessOperation {
+    Impute,
+    Smooth,
 };
 
 struct ImputeOptions;
@@ -42,10 +47,12 @@ struct ImputeResult {
 };
 
 std::vector<HaplotypeTarget> discover_haplotype_targets(
-    const std::vector<std::string>& header, ImputeMode mode = ImputeMode::Fraction);
+    const std::vector<std::string>& header, ImputeMode mode = ImputeMode::Fraction,
+    ProcessOperation operation = ProcessOperation::Impute);
 
 std::vector<HaplotypeTarget> discover_sample_targets(
-    const std::vector<std::string>& header, ImputeMode mode = ImputeMode::Fraction);
+    const std::vector<std::string>& header, ImputeMode mode = ImputeMode::Fraction,
+    ProcessOperation operation = ProcessOperation::Impute);
 
 // y_col must be a {sample}.hap{1,2}_counts column name from the header.
 HaplotypeTarget find_haplotype_target(const std::vector<std::string>& header,
@@ -76,5 +83,9 @@ void write_projected_row_all(
 
 ImputeResult impute_from_window(const std::deque<WindowSite>& window, const ImputeOptions& opts,
                                 double current_y, double current_n, double current_pct);
+
+ImputeResult smooth_from_window(const std::deque<WindowSite>& window, const ImputeOptions& opts,
+                                double current_y, double current_n, double current_pct,
+                                int current_pos);
 
 }  // namespace impute_methylation

@@ -71,31 +71,22 @@ void process_sample_group(SampleImputeGroup& group, const std::vector<HaplotypeT
         if (target.pct_idx >= 0) {
             pct = parse_double_field(fields[static_cast<std::size_t>(target.pct_idx)]);
         }
-        imputed_values[t] = impute_from_window(window, opts, site.y, site.n, pct);
+        if (opts.operation == ProcessOperation::Smooth) {
+            imputed_values[t] =
+                smooth_from_window(window, opts, site.y, site.n, pct, pos);
+        } else {
+            imputed_values[t] = impute_from_window(window, opts, site.y, site.n, pct);
+        }
     }
 }
 
-}  // namespace
-
-std::string format_fraction(double value) {
-    if (is_nan(value)) return ".";
-    constexpr double kEps = 1e-9;
-    if (value <= kEps) return "0";
-    if (value >= 1.0 - kEps) return "1";
-    std::ostringstream os;
-    os << std::fixed << std::setprecision(4) << value;
-    std::string s = os.str();
-    while (!s.empty() && s.back() == '0') s.pop_back();
-    if (!s.empty() && s.back() == '.') s.pop_back();
-    return s;
-}
-
-void stream_beta_binomial_impute_targets(const std::string& input_path,
-                                         const std::string& output_path,
-                                         const std::vector<HaplotypeTarget>& targets,
-                                         const ImputeOptions& opts) {
+void stream_beta_binomial_process_targets(const std::string& input_path,
+                                          const std::string& output_path,
+                                          const std::vector<HaplotypeTarget>& targets,
+                                          const ImputeOptions& opts,
+                                          const char* empty_targets_error) {
     if (targets.empty()) {
-        throw std::runtime_error("No haplotype targets to impute");
+        throw std::runtime_error(empty_targets_error);
     }
 
     std::ifstream in(input_path);
@@ -173,6 +164,31 @@ void stream_beta_binomial_impute_targets(const std::string& input_path,
 #endif
 }
 
+}  // namespace
+
+std::string format_fraction(double value) {
+    if (is_nan(value)) return ".";
+    constexpr double kEps = 1e-9;
+    if (value <= kEps) return "0";
+    if (value >= 1.0 - kEps) return "1";
+    std::ostringstream os;
+    os << std::fixed << std::setprecision(4) << value;
+    std::string s = os.str();
+    while (!s.empty() && s.back() == '0') s.pop_back();
+    if (!s.empty() && s.back() == '.') s.pop_back();
+    return s;
+}
+
+void stream_beta_binomial_impute_targets(const std::string& input_path,
+                                         const std::string& output_path,
+                                         const std::vector<HaplotypeTarget>& targets,
+                                         const ImputeOptions& opts) {
+    ImputeOptions impute_opts = opts;
+    impute_opts.operation = ProcessOperation::Impute;
+    stream_beta_binomial_process_targets(input_path, output_path, targets, impute_opts,
+                                         "No haplotype targets to impute");
+}
+
 void stream_beta_binomial_impute_all(const std::string& input_path,
                                      const std::string& output_path,
                                      const ImputeOptions& opts) {
@@ -184,8 +200,8 @@ void stream_beta_binomial_impute_all(const std::string& input_path,
 
     const std::vector<std::string> input_header = split_tab(line);
     const std::vector<HaplotypeTarget> targets =
-        opts.sample_mode ? discover_sample_targets(input_header, opts.mode)
-                      : discover_haplotype_targets(input_header, opts.mode);
+        opts.sample_mode ? discover_sample_targets(input_header, opts.mode, ProcessOperation::Impute)
+                      : discover_haplotype_targets(input_header, opts.mode, ProcessOperation::Impute);
     if (targets.empty()) {
         throw std::runtime_error(opts.sample_mode
                                      ? "No {sample}.counts columns found in header"
@@ -193,6 +209,39 @@ void stream_beta_binomial_impute_all(const std::string& input_path,
     }
 
     stream_beta_binomial_impute_targets(input_path, output_path, targets, opts);
+}
+
+void stream_beta_binomial_smooth_targets(const std::string& input_path,
+                                         const std::string& output_path,
+                                         const std::vector<HaplotypeTarget>& targets,
+                                         const ImputeOptions& opts) {
+    ImputeOptions smooth_opts = opts;
+    smooth_opts.operation = ProcessOperation::Smooth;
+    stream_beta_binomial_process_targets(input_path, output_path, targets, smooth_opts,
+                                         "No haplotype targets to smooth");
+}
+
+void stream_beta_binomial_smooth_all(const std::string& input_path,
+                                     const std::string& output_path,
+                                     const ImputeOptions& opts) {
+    std::ifstream in(input_path);
+    if (!in) throw std::runtime_error("Cannot open input: " + input_path);
+
+    std::string line;
+    if (!std::getline(in, line)) throw std::runtime_error("Empty input: " + input_path);
+
+    const std::vector<std::string> input_header = split_tab(line);
+    const std::vector<HaplotypeTarget> targets =
+        opts.sample_mode
+            ? discover_sample_targets(input_header, opts.mode, ProcessOperation::Smooth)
+            : discover_haplotype_targets(input_header, opts.mode, ProcessOperation::Smooth);
+    if (targets.empty()) {
+        throw std::runtime_error(opts.sample_mode
+                                     ? "No {sample}.counts columns found in header"
+                                     : "No {sample}.hap{1,2}_counts columns found in header");
+    }
+
+    stream_beta_binomial_smooth_targets(input_path, output_path, targets, opts);
 }
 
 }  // namespace impute_methylation

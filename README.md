@@ -8,12 +8,13 @@
 
 Stream-merge [modkit](https://github.com/nanoporetech/modkit) **bedMethyl** files from phased haplotypes into a single TSV matrix, with optional local beta-binomial imputation. Built for cohorts where each sample has `*_hp1.bedmethyl` and `*_hp2.bedmethyl` pairs.
 
-Seven command-line tools:
+Eight command-line tools:
 
 | Tool | Purpose |
 |------|---------|
 | `merge_bedmethyl` | Merge haplotype bedMethyl pairs into one TSV |
 | `impute_methylation` | Impute missing methylation on an already-merged TSV |
+| `smooth_methylation` | Smooth observed methylation/coverage without filling missing values |
 | `evaluate` | Hold-out benchmark for imputation (per-sample or per-haplotype) |
 | `dml` | DSS DML multiFactor: differential methylation per CpG |
 | `call_dmr` | DSS callDMR: merge significant DML sites into DMRs |
@@ -158,7 +159,7 @@ cmake --build build
 make
 ```
 
-Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/evaluate`, `build/dml`, `build/call_dmr`, `build/tracts`, `build/la-dml`
+Binaries: `build/merge_bedmethyl`, `build/impute_methylation`, `build/smooth_methylation`, `build/evaluate`, `build/dml`, `build/call_dmr`, `build/tracts`, `build/la-dml`
 
 ```bash
 cmake --install build   # optional, installs to CMAKE_INSTALL_PREFIX/bin
@@ -243,6 +244,30 @@ impute_methylation --counts-cov merged.tsv imputed_counts_cov.tsv
 
 Haplotype mode (default) writes `{id}.hap{1,2}_frac_imputed` (or `{id}.hap{1,2}_counts` / `_cov` with `--counts-cov`).
 Sample mode (`--sample`) writes `{id}.frac_imputed` (or `{id}.counts` / `{id}.cov` with `--counts-cov`).
+
+### `smooth_methylation`
+
+Local **beta-binomial smoothing** on an already-merged TSV. Same window model and options as `impute_methylation`, but applied only to **observed** sites; missing values (`.`) are left unchanged.
+
+```bash
+# Haplotype mode (default): phased hp1/hp2 columns per sample
+smooth_methylation [-w 200] [-a 1] [-b 1] [-n 5] [-j N] merged.tsv smoothed.tsv
+
+# Sample mode: {id}.counts / {id}.cov columns
+smooth_methylation --sample [-w 200] [-a 1] [-b 1] [-n 5] [-j N] merged.tsv smoothed.tsv
+
+# Counts/coverage output
+smooth_methylation --counts-cov merged.tsv smoothed_counts_cov.tsv
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--sample` | Input has `{id}.counts` / `{id}.cov` columns | off (haplotype) |
+| `--counts-cov` | Smooth counts and coverage instead of fraction | off |
+| `-w`, `-a`, `-b`, `-n`, `-j` | Same as `impute_methylation` | `200`, `1`, `1`, `5`, `1` |
+
+Haplotype mode (default) writes `{id}.hap{1,2}_frac_smoothed` (or `{id}.hap{1,2}_counts` / `_cov` with `--counts-cov`).
+Sample mode (`--sample`) writes `{id}.frac_smoothed` (or `{id}.counts` / `{id}.cov` with `--counts-cov`).
 
 ### `evaluate`
 
@@ -414,6 +439,7 @@ CTest runs:
 1. **merge_two_samples** — merges fixture bedMethyl pairs and checks row count.
 2. **merge_output_format** — compares output to `tests/expected/merge_two_samples.tsv` (see [Output format (merge)](#output-format-merge)).
 3. **impute_stream_tiny** / **impute_output_columns** — imputation on `tests/data/tiny.tsv` vs `tests/expected/tiny_hap1_imputed.tsv`.
+4. **smooth_stream_tiny** / **smooth_output_columns** — smoothing on `tests/data/tiny.tsv` vs `tests/expected/tiny_hap1_smoothed.tsv`.
 5. **evaluate_tiny** — hold-out evaluation metrics on the tiny fixture.
 6. **dml_tiny_cohort** / **dml_output_format** — DSS DML on `tests/data/dml_cohort.tsv`.
 7. **call_dmr_tiny** / **call_dmr_output_format** — DSS callDMR on `tests/data/dml_call_dmr.csv`.
@@ -435,6 +461,7 @@ LEMUR/
 ├── src/
 │   ├── main.cpp          # merge_bedmethyl entry
 │   ├── impute_main.cpp   # impute_methylation entry
+│   ├── smooth_main.cpp   # smooth_methylation entry
 │   ├── evaluate_main.cpp # evaluate entry
 │   ├── dml_main.cpp      # dml entry
 │   ├── call_dmr_main.cpp # call_dmr entry
