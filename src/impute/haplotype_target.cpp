@@ -44,14 +44,11 @@ bool is_dropped(const std::unordered_set<std::string>& drop, const std::string& 
     return drop.count(col) > 0;
 }
 
-void set_fraction_outputs(HaplotypeTarget& t, ProcessOperation operation) {
-    const char* suffix =
-        operation == ProcessOperation::Smooth ? "_frac_smoothed" : "_frac_imputed";
+void set_fraction_outputs(HaplotypeTarget& t) {
     if (!t.hap.empty()) {
-        t.out_col = t.sample_id + "." + t.hap + suffix;
+        t.out_col = t.sample_id + "." + t.hap + "_frac_imputed";
     } else {
-        t.out_col = t.sample_id + (operation == ProcessOperation::Smooth ? ".frac_smoothed"
-                                                                         : ".frac_imputed");
+        t.out_col = t.sample_id + ".frac_imputed";
     }
 }
 
@@ -134,8 +131,7 @@ ImputeResult window_estimate(double y_sum, double n_sum, std::size_t valid, cons
 }  // namespace
 
 std::vector<HaplotypeTarget> discover_haplotype_targets(const std::vector<std::string>& header,
-                                                        ImputeMode mode,
-                                                        ProcessOperation operation) {
+                                                        ImputeMode mode) {
     std::vector<HaplotypeTarget> targets;
     targets.reserve(header.size() / 6);
 
@@ -160,7 +156,7 @@ std::vector<HaplotypeTarget> discover_haplotype_targets(const std::vector<std::s
         if (mode == ImputeMode::CountsCov) {
             set_counts_cov_outputs(t);
         } else {
-            set_fraction_outputs(t, operation);
+            set_fraction_outputs(t);
         }
         targets.push_back(std::move(t));
     }
@@ -168,8 +164,7 @@ std::vector<HaplotypeTarget> discover_haplotype_targets(const std::vector<std::s
 }
 
 std::vector<HaplotypeTarget> discover_sample_targets(const std::vector<std::string>& header,
-                                                     ImputeMode mode,
-                                                     ProcessOperation operation) {
+                                                     ImputeMode mode) {
     std::vector<HaplotypeTarget> targets;
     targets.reserve(header.size() / 3);
 
@@ -192,7 +187,7 @@ std::vector<HaplotypeTarget> discover_sample_targets(const std::vector<std::stri
         if (mode == ImputeMode::CountsCov) {
             set_counts_cov_outputs(t);
         } else {
-            set_fraction_outputs(t, operation);
+            set_fraction_outputs(t);
         }
         targets.push_back(std::move(t));
     }
@@ -301,33 +296,6 @@ ImputeResult impute_from_window(const std::deque<WindowSite>& window, const Impu
     std::size_t valid = 0;
 
     for (const auto& site : window) {
-        if (is_nan(site.n) || site.n <= 0.0) continue;
-        ++valid;
-        n_sum += site.n;
-        if (!is_nan(site.y)) y_sum += site.y;
-    }
-
-    ImputeResult estimated = window_estimate(y_sum, n_sum, valid, opts);
-    if (!estimated.fraction.empty() || !estimated.counts.empty() || !estimated.cov.empty()) {
-        return estimated;
-    }
-    return observed_values(current_y, current_n, current_pct, opts.mode);
-}
-
-ImputeResult smooth_from_window(const std::deque<WindowSite>& window, const ImputeOptions& opts,
-                                double current_y, double current_n, double current_pct,
-                                int current_pos) {
-    // Preserve missing sites. Only smooth when current site is observed.
-    if (is_nan(current_n) || current_n <= 0.0 || is_nan(current_y)) {
-        return observed_values(current_y, current_n, current_pct, opts.mode);
-    }
-
-    double y_sum = 0.0;
-    double n_sum = 0.0;
-    std::size_t valid = 0;
-
-    for (const auto& site : window) {
-        if (site.pos == current_pos) continue;
         if (is_nan(site.n) || site.n <= 0.0) continue;
         ++valid;
         n_sum += site.n;

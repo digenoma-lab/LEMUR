@@ -14,6 +14,8 @@ struct SiteInput {
     int pos = 0;
     std::vector<double> counts;
     std::vector<double> cov;
+    // Precomputed arcsin(Z) from smoothed counts/cov (DSS smoothing); empty = use raw counts/cov.
+    std::vector<double> z;
 };
 
 struct SiteResult {

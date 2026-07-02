@@ -28,6 +28,7 @@ add_library(dml_lib
     src/dml/fdr.cpp
     src/dml/tsv_stream.cpp
     src/dml/util.cpp
+    src/dml/smoothing.cpp
     src/dml/call_dmr.cpp
 )
 target_include_directories(dml_lib PUBLIC include)
@@ -50,9 +51,6 @@ target_link_libraries(merge_bedmethyl PRIVATE merge_bedmethyl_lib impute_methyla
 add_executable(impute_methylation src/impute_main.cpp)
 target_link_libraries(impute_methylation PRIVATE impute_methylation_lib)
 
-add_executable(smooth_methylation src/smooth_main.cpp)
-target_link_libraries(smooth_methylation PRIVATE impute_methylation_lib)
-
 add_executable(evaluate src/evaluate_main.cpp)
 target_link_libraries(evaluate PRIVATE impute_methylation_lib)
 
@@ -63,7 +61,7 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(la-dml PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
-install(TARGETS merge_bedmethyl impute_methylation smooth_methylation evaluate dml call_dmr tracts la-dml RUNTIME DESTINATION bin)
+install(TARGETS merge_bedmethyl impute_methylation evaluate dml call_dmr tracts la-dml RUNTIME DESTINATION bin)
 
 enable_testing()
 add_subdirectory(tests)

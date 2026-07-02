@@ -105,10 +105,11 @@ bool wls(const std::vector<Obs>& obs, int p, const std::vector<double>& z,
 }
 
 bool dss_fit_one_cpg(const std::vector<Obs>& obs, int p, std::vector<double>& beta, double& phi,
-                     double& se_phenotype) {
+                     double& se_phenotype, const std::vector<double>* z_override = nullptr) {
     const int n = static_cast<int>(obs.size());
     if (n <= p + 1) return false;
     if (p <= kPhenotypeIdx) return false;
+    if (z_override != nullptr && static_cast<int>(z_override->size()) != n) return false;
 
     std::vector<double> z(static_cast<std::size_t>(n));
     std::vector<double> N(static_cast<std::size_t>(n));
@@ -117,7 +118,9 @@ bool dss_fit_one_cpg(const std::vector<Obs>& obs, int p, std::vector<double>& be
     for (int i = 0; i < n; ++i) {
         N[static_cast<std::size_t>(i)] = obs[static_cast<std::size_t>(i)].n;
         z[static_cast<std::size_t>(i)] =
-            arcsin_methylation(obs[static_cast<std::size_t>(i)].k, N[static_cast<std::size_t>(i)]);
+            z_override != nullptr ? (*z_override)[static_cast<std::size_t>(i)]
+                                  : arcsin_methylation(obs[static_cast<std::size_t>(i)].k,
+                                                       N[static_cast<std::size_t>(i)]);
         w1[static_cast<std::size_t>(i)] = N[static_cast<std::size_t>(i)];
     }
 
@@ -176,6 +179,9 @@ std::optional<SiteResult> fit_site(const SiteInput& site, const CohortMeta& meta
     const int p = meta.n_params;
     std::vector<Obs> obs;
     obs.reserve(meta.samples.size());
+    std::vector<double> z_obs;
+    const bool use_smoothed_z = !site.z.empty();
+    if (use_smoothed_z) z_obs.reserve(meta.samples.size());
 
     int case_n = 0;
     int control_n = 0;
@@ -188,6 +194,11 @@ std::optional<SiteResult> fit_site(const SiteInput& site, const CohortMeta& meta
         if (is_nan(m) || is_nan(c) || c <= 0.0) continue;
 
         obs.push_back(Obs{m, c, meta.samples[i].xrow});
+        if (use_smoothed_z) {
+            const double zi = site.z[i];
+            if (is_nan(zi)) return std::nullopt;
+            z_obs.push_back(zi);
+        }
         const double frac = m / c;
         if (meta.samples[i].phenotype_bin == 1) {
             case_sum += frac;
@@ -205,7 +216,8 @@ std::optional<SiteResult> fit_site(const SiteInput& site, const CohortMeta& meta
     std::vector<double> beta;
     double phi = kNaN;
     double se1 = kNaN;
-    if (!dss_fit_one_cpg(obs, p, beta, phi, se1)) return std::nullopt;
+    const std::vector<double>* z_ptr = use_smoothed_z ? &z_obs : nullptr;
+    if (!dss_fit_one_cpg(obs, p, beta, phi, se1, z_ptr)) return std::nullopt;
 
     const double stat = beta[static_cast<std::size_t>(kPhenotypeIdx)] / se1;
 
